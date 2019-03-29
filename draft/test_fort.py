@@ -24,8 +24,8 @@ structdef = """
 
             
 ffi.cdef(structdef + """
-  void __testfort_MOD_test_vector(struct descr *vecdata);
-  struct descr * __testfort_MOD_test_alloc_vector();
+  void __testfort_MOD_test_vector(struct descr *vec);
+  void __testfort_MOD_ones_1d(struct descr *vec, int *n);
 """)
 
 ffi.set_source('_testfort',
@@ -61,7 +61,14 @@ vecdata.base_addr = ffi.cast('void*', vec.ctypes.data)
 testfort.__testfort_MOD_test_vector(vecdata)
 
 print(vec)
-#testfort.__testfort_MOD_test_alloc_vector()
-#vecdata2 = testfort.__testfort_MOD_test_alloc_vector()
+vecdata2 = ffi.new('struct descr*')
+intdata = ffi.new('int*', 15)
 
-#print(vecdata2)
+#%%
+testfort.__testfort_MOD_ones_1d(vecdata2, intdata)
+
+#%%
+buf = ffi.buffer(vecdata2.base_addr, 8*vecdata2.dim[0].upper_bound)
+vec2 = np.frombuffer(buf, np.float64)
+
+print(vec2)

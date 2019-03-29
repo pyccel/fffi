@@ -1,23 +1,38 @@
 module testfort
   implicit none
-  
+
 contains
-  
+
   subroutine test_vector(vec)
     real(8), intent(inout) :: vec(:)
     integer :: k, n
-    
+
     n = size(vec)
-    
+
     do k = 1, n
       vec(k) = vec(k)*k
     end do
   end subroutine test_vector
 
-  function test_alloc_vector() result(y)
-    real(8), allocatable :: y(:)
-    allocate(y(20))
-    y = 2.0d0
-  end function test_alloc_vector
+  subroutine ones_1d(vec, n)
+    real(8), allocatable, intent(out) :: vec(:)
+    integer, intent(in) :: n
+    allocate(vec(n))
+    vec = 1.0d0
+  end subroutine ones_1d
 
 end module testfort
+
+program main
+  use testfort
+  implicit none
+
+  real(8), allocatable :: y(:)
+
+  call ones_1d(y, 15)
+  print *, y
+  call test_vector(y)
+  print *, y
+
+  deallocate(y)
+end program main
