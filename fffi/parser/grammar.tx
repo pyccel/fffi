@@ -8,35 +8,35 @@ Statement:
 
 // R501
 Declaration:
-   dtype=DeclarationType ((attributs*=DeclarationAttribut[','])? DEF)? entities*=DeclarationEntity[',']
+   dtype=DeclarationType ((',' attributs*=DeclarationAttribut[','])? DEF)? entities*=DeclarationEntity[',']
 ;
 
 // R502
 DeclarationType:
       kind=IntrinsicType 
-    | kind='TYPE'  //(DerivedType)?
-    | kind='CLASS' //(DerivedType | STAR)?
+    | kind='TYPE'  //(DerivedType)? // TODO
+    | kind='CLASS' //(DerivedType | STAR)? // TODO
 ;
 
 // R503
 DeclarationAttribut:
-      'ALLOCATABLE'
-    | 'ASYNCHRONOUS'
+      key='ALLOCATABLE'
+    | key='ASYNCHRONOUS'
 //    | 'BIND'( C [ , NAME= scalar-character-initialization-expression ] )
-//    | 'DIMENSION' ( array-spec )
-    | 'EXTERNAL'
+    | key='DIMENSION' '(' value=ArraySpec ')'
+    | key='EXTERNAL'
 //    | 'INTENT' ( intent-spec )
-    | 'INTRINSIC'
-    | 'OPTIONAL'
-    | 'PARAMETER'
-    | 'POINTER'
-    | 'PRIVATE'
-    | 'PROTECTED'
-    | 'PUBLIC'
-    | 'SAVE'
-    | 'TARGET'
-    | 'VALUE'
-    | 'VOLATILE'
+    | key='INTRINSIC'
+    | key='OPTIONAL'
+    | key='PARAMETER'
+    | key='POINTER'
+    | key='PRIVATE'
+    | key='PROTECTED'
+    | key='PUBLIC'
+    | key='SAVE'
+    | key='TARGET'
+    | key='VALUE'
+    | key='VOLATILE'
 ;
 
 // R504
@@ -52,26 +52,30 @@ DeclarationEntityFunction:
     name=ID (STAR charlen=INT)?
 ;
 
+// R510
+ArraySpec:
+      value*=ArrayExplicitShapeSpec[','] 
+//    | value*=ArrayAssumedShapeSpec[','] 
+//    | value*=ArrayDeferredShapeSpec[','] 
+//    | value=ArrayAssumedSizeSpec
+;
+
+// R514
+ArrayExplicitShapeSpec:
+    (':' lower_bound=INT|ID)? upper_bound=INT|ID
+;
+
+
 IntrinsicType:
       'INTEGER' 
     | 'REAL' 
-    | 'DOUBLE PRECISION' // TODO allowing for white spaces 
     | 'COMPLEX' 
+    | 'DOUBLE PRECISION' // TODO allowing for white spaces 
+    | 'DOUBLE COMPLEX' // TODO allowing for white spaces 
     | 'LOGICAL' 
     | 'CHARACTER' 
 ;
 
-
 DEF:         "::";
 COMMA:       ",";
 STAR:       "*";
-//EQ:          "=";
-//SUBSCRIPT:   '_';
-//LPAREN:      "(";
-//RPAREN:      ")";
-//LTRIANGLE:   '<';
-//RTRIANGLE:   '>';
-//PlusOrMinus: '+' | '-';
-//MulOrDiv:    '*' | '/';
-//Comment:     /#.*$/;
-//TestFunction: name=ID;
