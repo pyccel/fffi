@@ -1,4 +1,4 @@
-FORTRAN:
+Fortran:
   statements*=Statement
 ;
 
@@ -55,7 +55,7 @@ DeclarationEntityFunction:
 IntrinsicType:
       'INTEGER' 
     | 'REAL' 
-    | 'DOUBLE' 'PRECISION' 
+    | 'DOUBLE PRECISION' // TODO allowing for white spaces 
     | 'COMPLEX' 
     | 'LOGICAL' 
     | 'CHARACTER' 
