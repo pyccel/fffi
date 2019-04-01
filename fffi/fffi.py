@@ -12,6 +12,9 @@ import os
 import re
 from cffi import FFI
 
+log_warn = True
+log_debug = False
+
 arraydims = """
   typedef struct array_dims array_dims;
   struct array_dims {
@@ -29,7 +32,6 @@ arraydescr = """
     ptrdiff_t dtype;
     struct array_dims dim[{0}];
   }};
-
 """
 
 
@@ -71,6 +73,8 @@ def warn(output):
 
 
 def debug(output):
+    if not log_debug:
+        return
     caller_frame = inspect.currentframe().f_back
     (filename, line_number,
      function_name, lines, index) = inspect.getframeinfo(caller_frame)
@@ -81,11 +85,11 @@ def debug(output):
 
 
 class fortran_module:
-    def __init__(self, library, name):
+    def __init__(self, library, name, maxdim=7):
         self.library = library
         self.name = name
         self.methods = []
-        self.maxdim = 5  # maximum dimension of arrays
+        self.maxdim = maxdim  # maximum dimension of arrays
         self.csource = ''
         self.loaded = False
 
@@ -103,13 +107,17 @@ class fortran_module:
         """
         cargs = []
         for arg in args:
-            if isinstance(arg, np.ndarray):
-                cargs.append(numpy2fortran(self._mod.ffi, arg))
-            else:  # TODO: add pointers to basic types
+            if isinstance(arg, int):
+                cargs.append(self._ffi.new('int*', arg))
+            elif isinstance(arg, float):
+                cargs.append(self._ffi.new('double*', arg))
+            elif isinstance(arg, np.ndarray):
+                cargs.append(numpy2fortran(self._ffi, arg))
+            else:  # TODO: add more basic types
                 raise NotImplementedError('Argument type not understood')
         # GNU specific
         funcname = '__'+self.name+'_MOD_'+function
-        func = getattr(self._mod.lib, funcname)
+        func = getattr(self._lib, funcname)
         debug('Calling {}({})'.format(funcname, cargs))
         func(*cargs)
 
@@ -159,8 +167,9 @@ class fortran_module:
 
         self._mod = importlib.import_module('_'+self.name)
         self._ffi = self._mod.ffi
+        self._lib = self._mod.lib
         self.methods = []
-        ext_methods = dir(self._mod.lib)
+        ext_methods = dir(self._lib)
         for m in ext_methods:
             mname = re.sub('__.+_MOD_', '', m)  # GNU specific
             self.methods.append(mname)
