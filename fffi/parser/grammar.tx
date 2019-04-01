@@ -1,0 +1,77 @@
+FORTRAN:
+  statements*=Statement
+;
+
+Statement: 
+  Declaration
+;
+
+// R501
+Declaration:
+   dtype=DeclarationType ((attributs*=DeclarationAttribut[','])? DEF)? entities*=DeclarationEntity[',']
+;
+
+// R502
+DeclarationType:
+      kind=IntrinsicType 
+    | kind='TYPE'  //(DerivedType)?
+    | kind='CLASS' //(DerivedType | STAR)?
+;
+
+// R503
+DeclarationAttribut:
+      'ALLOCATABLE'
+    | 'ASYNCHRONOUS'
+//    | 'BIND'( C [ , NAME= scalar-character-initialization-expression ] )
+//    | 'DIMENSION' ( array-spec )
+    | 'EXTERNAL'
+//    | 'INTENT' ( intent-spec )
+    | 'INTRINSIC'
+    | 'OPTIONAL'
+    | 'PARAMETER'
+    | 'POINTER'
+    | 'PRIVATE'
+    | 'PROTECTED'
+    | 'PUBLIC'
+    | 'SAVE'
+    | 'TARGET'
+    | 'VALUE'
+    | 'VOLATILE'
+;
+
+// R504
+DeclarationEntity: DeclarationEntityObject | DeclarationEntityFunction;
+
+// R504
+DeclarationEntityObject:
+    name=ID // TODO add the remaining attributs
+;
+
+// R504
+DeclarationEntityFunction:
+    name=ID (STAR charlen=INT)?
+;
+
+IntrinsicType:
+      'INTEGER' 
+    | 'REAL' 
+    | 'DOUBLE' 'PRECISION' 
+    | 'COMPLEX' 
+    | 'LOGICAL' 
+    | 'CHARACTER' 
+;
+
+
+DEF:         "::";
+COMMA:       ",";
+STAR:       "*";
+//EQ:          "=";
+//SUBSCRIPT:   '_';
+//LPAREN:      "(";
+//RPAREN:      ")";
+//LTRIANGLE:   '<';
+//RTRIANGLE:   '>';
+//PlusOrMinus: '+' | '-';
+//MulOrDiv:    '*' | '/';
+//Comment:     /#.*$/;
+//TestFunction: name=ID;

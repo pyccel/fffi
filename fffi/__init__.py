@@ -4,4 +4,5 @@ Created: Fri Mar 29 2019
 """
 
 __all__ = ['fffi']
-from .fffi import *
+from .fffi   import *
+from .parser import *
