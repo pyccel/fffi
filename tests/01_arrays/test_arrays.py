@@ -5,37 +5,39 @@ Created: 2019-04-01
 
 import numpy as np
 import subprocess
+import sys
 
-from fffi import fortran_module
+try:
+    from fffi import fortran_module
+except:
+    sys.path.append('../../')
+    from fffi import fortran_module
 
-docompile = False
+docompile = True
 
+# Initialize
 mod_arrays = fortran_module('test_arrays', 'mod_arrays')
 
+# Optionally compile module
 if docompile:
     # This will use fortran_module.fdef instead of cdef in the future.
-    # Ideally, the actual Fortran source code will be parsed optionally
+    # Ideally, the actual Fortran source file would be parsed as an option
     # instead of code containing only the signatures.
-    #
-    # with open('mod_arrays_sig.f90') as sigfile:
-    #     fsource = sigfile.read()
-    # mod_arrays.fdef(fsource)
 
-    with open('mod_arrays_sig.c') as sigfile:
-        csource = sigfile.read()
-    mod_arrays.cdef(csource)
+    mod_arrays.cdef("""
+      void {mod}_test_vector(array_1d *vec);
+      void {mod}_test_array_2d(array_2d *arr);
+    """)
 
     mod_arrays.compile(verbose=True)
 
 ref_out = subprocess.check_output('./test_arrays.x', shell=True)
 
+# Load module
 mod_arrays.load()
 
-
 print('')
-print('----------------------------------------------------------------------')
 print('Test 1: Allocate vector in numpy, apply Fortran routine')
-print('----------------------------------------------------------------------')
 
 vec = np.ones(10)
 mod_arrays.test_vector(vec)
@@ -43,13 +45,11 @@ print(vec)
 
 
 print('')
-print('----------------------------------------------------------------------')
 print('Test 2: Allocate 2D array in numpy, apply Fortran routine')
-print('----------------------------------------------------------------------')
 
 m = 3
 n = 2
 
-arr = np.ones((m,n), order='F')
+arr = np.ones((m,n), order='F') # important: array order 'F' for Fortran
 mod_arrays.test_array_2d(arr)
 print(arr)

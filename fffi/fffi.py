@@ -101,14 +101,15 @@ class fortran_module:
         for arg in args:
             if isinstance(arg, np.ndarray):
                 cargs.append(numpy2fortran(self._mod.ffi, arg))
-            else:
-                cargs.append(arg)
-        debug('Calling {}({})'.format(function, cargs))
+            else:  # TODO: add pointers to basic types
+                raise NotImplementedError('Argument type not understood')
         # GNU specific
-        func = getattr(self._mod.lib, '__'+self.name+'_MOD_'+function)
+        funcname = '__'+self.name+'_MOD_'+function
+        func = getattr(self._mod.lib, funcname)
+        debug('Calling {}({})'.format(funcname, cargs))
         func(*cargs)
 
-    def cdef(self, csource):  # TODO: replace this by fdef
+    def cdef(self, csource):  # TODO: replace this by implementing fdef
         """
         Specifies C source with some template replacements:
         {mod} -> compiler module prefix, e.g. for self.name == testmod for GCC:
