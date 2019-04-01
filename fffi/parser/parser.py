@@ -66,8 +66,8 @@ class ArraySpec(object):
 class ArrayExplicitShapeSpec(object):
     """Class representing explicit array shape."""
     def __init__(self, **kwargs):
-        self.upper_bound = kwargs.pop('upper_bound')
-        self.lower_bound = kwargs.pop('lower_bound', None)
+        self.upper_bound = kwargs.pop('upper_bound', None)
+        self.lower_bound = kwargs.pop('lower_bound', 1)
 
 #==============================================================================
 
@@ -134,13 +134,14 @@ def parse(inputs, debug=False):
 
             # ...
             rank = 0
+            shape = None
             attributs = []
             for i in stmt.attributs:
                 key   = i.key.lower()
                 value = i.value
-                d_infos = value.expr
 
                 if key == 'dimension':
+                    d_infos = value.expr
                     shape = d_infos['shape']
                     rank = len(shape)
 
@@ -177,14 +178,22 @@ def parse(inputs, debug=False):
 
 
 #    print(namespace)
-    for k,v in namespace.items():
-        v.inspect()
+#    for k,v in namespace.items():
+#        v.inspect()
+
+    # this is usefull for testing
+    if len(namespace) == 1:
+        return list(namespace.values())[0]
 
 
 ####################################
 if __name__ == '__main__':
-#    ast = parse('INTEGER :: x')
-#    ast = parse('INTEGER  x')
-#    ast = parse('INTEGER, PARAMETER ::  x')
-#    ast = parse('DOUBLE PRECISION :: y')
+    ast = parse('INTEGER :: x')
+    ast = parse('INTEGER  x')
+    ast = parse('INTEGER, PARAMETER ::  x')
+    ast = parse('DOUBLE PRECISION :: y')
+    ast = parse('INTEGER, DIMENSION(:) :: x')
+    ast = parse('INTEGER, DIMENSION(:10) :: x')
+    ast = parse('INTEGER, DIMENSION(10:) :: x')
     ast = parse('INTEGER, DIMENSION(10) :: x')
+    ast = parse('INTEGER, DIMENSION(10:20) :: x')

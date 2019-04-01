@@ -53,6 +53,7 @@ DeclarationEntityFunction:
 ;
 
 // R510
+// TODO treat remaining cases
 ArraySpec:
       value*=ArrayExplicitShapeSpec[','] 
 //    | value*=ArrayAssumedShapeSpec[','] 
@@ -62,7 +63,13 @@ ArraySpec:
 
 // R514
 ArrayExplicitShapeSpec:
-    (':' lower_bound=INT|ID)? upper_bound=INT|ID
+    ((lower_bound=ArrayBound)? ':')? (upper_bound=ArrayBound)? 
+;
+
+// TODO this must be an int expr
+ArrayBound:
+      INT
+    | ID
 ;
 
 
