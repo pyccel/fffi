@@ -32,6 +32,7 @@ arraydescr = """
 
 """
 
+
 def numpy2fortran(ffi, arr):
     """
     Converts Fortran-contiguous NumPy array arr into an array descriptor
@@ -45,9 +46,9 @@ def numpy2fortran(ffi, arr):
     arrdata.offset = 0
 
     arrdata.base_addr = ffi.cast('void*', arr.ctypes.data)
-    arrdata.dtype = ndims # rank of the array
-    arrdata.dtype = arrdata.dtype | (3 << 3) # "3" for float, TODO: allow others
-    arrdata.dtype = arrdata.dtype | (arr.dtype.itemsize << 6) # no of bytes
+    arrdata.dtype = ndims  # rank of the array
+    arrdata.dtype = arrdata.dtype | (3 << 3)  # "3" for float, TODO:others
+    arrdata.dtype = arrdata.dtype | (arr.dtype.itemsize << 6)  # no of bytes
 
     stride = 1
     for kd in range(ndims):
@@ -97,6 +98,9 @@ class fortran_module:
         return method
 
     def __call_fortran(self, function, *args):
+        """
+        Calls a Fortran module routine based on its name
+        """
         cargs = []
         for arg in args:
             if isinstance(arg, np.ndarray):
