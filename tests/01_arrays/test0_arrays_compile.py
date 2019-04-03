@@ -18,7 +18,7 @@ class TestArraysCompile(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.origcwd = os.getcwd()
-        cls.cwd = os.path.dirname(inspect.getfile(inspect.currentframe()))
+        cls.cwd = os.path.dirname(__file__)
         os.chdir(cls.cwd)
 
         try:
