@@ -43,10 +43,18 @@ class TestArrays(TestCase):
             for kcol in range(cls.n):
                 cls.refarr[:, kcol] = np.fromstring(refarrspl[kcol], sep='\n')
 
-            print(cls.cwd)
-            print(cls.origcwd)
-            print(os.getcwd())
-            cls.mod_arrays = fortran_module('test_arrays', 'mod_arrays')
+            os.system('make clean && make')
+            mod_arrays = fortran_module('test_arrays', 'mod_arrays',
+                                        path=cls.cwd)
+            mod_arrays.cdef("""
+              void {mod}_test_vector(array_1d *vec);
+              void {mod}_test_array_2d(array_2d *arr);
+            """)
+            mod_arrays.compile()
+
+            # recreate module to check if it works independently now
+            cls.mod_arrays = fortran_module('test_arrays', 'mod_arrays',
+                                            path=cls.cwd)
             cls.mod_arrays.load()
         except BaseException:
             os.chdir(cls.origcwd)

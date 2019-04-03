@@ -10,6 +10,7 @@ import inspect
 import numpy as np
 import os
 import re
+import sys
 from cffi import FFI
 
 log_warn = True
@@ -85,13 +86,19 @@ def debug(output):
 
 
 class fortran_module:
-    def __init__(self, library, name, maxdim=7):
+    def __init__(self, library, name, maxdim=7, path=None):
         self.library = library
         self.name = name
         self.methods = []
         self.maxdim = maxdim  # maximum dimension of arrays
         self.csource = ''
         self.loaded = False
+        self.path = path
+
+        # Manual path specification is required for tests via `setup.py test`
+        # which would not find the extension module otherwise
+        if self.path not in sys.path:
+            sys.path.append(self.path)
 
     def __dir__(self):
         return self.methods
@@ -134,7 +141,7 @@ class fortran_module:
     def fdef(self, fsource):
         raise NotImplementedError('will allow to use Fortran signatures')
 
-    def compile(self, verbose=False):
+    def compile(self, tmpdir='.', verbose=0, debugflag=None):
         """
         Compiles a Python extension as an interface for the Fortran module
         """
@@ -150,15 +157,24 @@ class fortran_module:
         if not verbose:
             extraargs.append('-Wno-implicit-function-declaration')
 
+        if self.path:
+            libpath = self.path
+            target = os.path.join(self.path, '_'+self.name+'.so')
+        else:
+            libpath = '.'
+            target = './_'+self.name+'.so'
+
+
         ffi.set_source('_'+self.name,
                        structdef,
                        libraries=[self.library],
                        library_dirs=['.'],
                        extra_compile_args=extraargs,
-                       extra_link_args=['-Wl,-rpath,.', '-lgfortran'])
+                       extra_link_args=['-Wl,-rpath,'+libpath, '-lgfortran'])
+
 
         debug('Compilation starting')
-        ffi.compile(verbose=verbose)
+        ffi.compile(tmpdir, verbose, target, debugflag)
 
     def load(self):
         """
