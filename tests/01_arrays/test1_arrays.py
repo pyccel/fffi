@@ -37,28 +37,24 @@ class TestArrays(TestCase):
             cls.refvec = np.fromstring(refspl[0], sep='\n')
 
             # Reference output for 2D array
-            m = 3  # rows
-            n = 2  # columns
-            refarrspl = refspl[1].split(b'\n\n') # Fortran column outputs
-            cls.refarr = np.empty((m,n))
+            refarrspl = refspl[1].split(b'\n\n')  # Fortran column outputs
+            cls.refarr = np.empty((cls.m, cls.n))
 
-            for kcol in range(n):
-                cls.refarr[:,kcol] = np.fromstring(refarrspl[kcol], sep='\n')
+            for kcol in range(cls.n):
+                cls.refarr[:, kcol] = np.fromstring(refarrspl[kcol], sep='\n')
 
             print(cls.cwd)
             print(cls.origcwd)
             print(os.getcwd())
             cls.mod_arrays = fortran_module('test_arrays', 'mod_arrays')
             cls.mod_arrays.load()
-        except:
+        except BaseException:
             os.chdir(cls.origcwd)
             raise
-
 
     @classmethod
     def tearDownClass(cls):
         os.chdir(cls.origcwd)
-
 
     def test_vector(self):
         """
@@ -69,13 +65,12 @@ class TestArrays(TestCase):
         self.mod_arrays.test_vector(vec)
         np.testing.assert_almost_equal(vec, self.refvec)
 
-
     def test_array_2d(self):
         """
         Allocate 2D array in numpy, apply Fortran routine
         """
 
-        arr = np.ones((self.m,self.n), order='F') # important: array order 'F'
+        arr = np.ones((self.m, self.n), order='F')  # correct array order
         self.mod_arrays.test_array_2d(arr)
         np.testing.assert_almost_equal(arr, self.refarr)
 
@@ -85,11 +80,10 @@ class TestArrays(TestCase):
         check if correct exception is thrown
         """
 
-        arr = np.ones((self.m,self.n), order='C')
+        arr = np.ones((self.m, self.n), order='C')  # incorrect array order
         with self.assertRaises(TypeError) as context:
             self.mod_arrays.test_array_2d(arr)
         self.assertTrue('needs Fortran order' in str(context.exception))
-
 
     def test_array_2d_multi(self):
         """
@@ -99,10 +93,10 @@ class TestArrays(TestCase):
 
         tracemalloc.start()
         snapshot1 = tracemalloc.take_snapshot()
-        arr = np.ones((self.m,self.n), order='F') # important: array order 'F'
+        arr = np.ones((self.m, self.n), order='F')  # correct array order
 
         for k in range(10):
-            arr[:,:] = 1.0
+            arr[:, :] = 1.0
             self.mod_arrays.test_array_2d(arr)
             np.testing.assert_almost_equal(arr, self.refarr)
 
@@ -114,7 +108,7 @@ class TestArrays(TestCase):
 
         snapshot1 = tracemalloc.take_snapshot()
         for k in range(1000):
-            arr[:,:] = 1.0
+            arr[:, :] = 1.0
             self.mod_arrays.test_array_2d(arr)
             np.testing.assert_almost_equal(arr, self.refarr)
 
