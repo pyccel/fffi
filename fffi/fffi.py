@@ -145,11 +145,17 @@ class fortran_module:
             structdef += arraydescr.format(kdim)
 
         ffi.cdef(structdef+self.csource)
+
+        extraargs = []
+        if not verbose:
+            extraargs.append('-Wno-implicit-function-declaration')
+
         ffi.set_source('_'+self.name,
                        structdef,
                        libraries=[self.library],
                        library_dirs=['.'],
-                       extra_link_args=['-Wl,-rpath=.', '-lgfortran'])
+                       extra_compile_args=extraargs,
+                       extra_link_args=['-Wl,-rpath,.', '-lgfortran'])
 
         debug('Compilation starting')
         ffi.compile(verbose=verbose)

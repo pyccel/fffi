@@ -18,4 +18,5 @@ static/mod_arrays.o: mod_arrays.f90
 	$(FC) -c -J static/ -o static/mod_arrays.o mod_arrays.f90
 
 clean:
-	rm -f static/* shared/* test_arrays.x libtest_arrays.so libtest_arrays.a
+	rm -f static/* shared/* test_arrays.x libtest_arrays.so libtest_arrays.a *.so *.a _*.c *.o
+
