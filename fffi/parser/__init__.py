@@ -1,2 +1,2 @@
 from .parser  import *
-from .syntax  import *
+#from .syntax  import *

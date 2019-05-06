@@ -5,6 +5,10 @@ The philosophy of `fffi` differs from `F2PY` in the sense that no rewriting or
 recompilation of Fortran code should be required. Practical and intuitive
 usability with a minimum of effort by the user is the top priority. The common
 case required by a majority of codes shall have the simplest possible usage.
+The use of ISO-C bindings will remain optional if guaranteed safety is required.
+Otherwise `fffi` relies on the convention that Fortran subroutines pass
+arguments by reference as pointers, as realized at least by gfortran and Intel.
+
 
 Basic usage using CFFI (fast) API mode with shared library
 `libtest_arrays.so` containing module `mod_arrays`:
