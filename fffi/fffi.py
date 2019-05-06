@@ -7,10 +7,10 @@ Created on Tue Dec 12 14:32:32 2017
 """
 import importlib
 import inspect
-import numpy as np
 import os
 import re
 import sys
+import numpy as np
 from cffi import FFI
 
 log_warn = True
