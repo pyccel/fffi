@@ -15,14 +15,14 @@ The following example can be found in `tests/01_arrays` directory and shows
 basic usage using CFFI (fast) API mode with a shared library
 `libtest_arrays.so` containing a module `mod_arrays`:
 1. Import fffi and initialize `fortran_module` object `mod_arrays`
-```
+```python
 from fffi import fortran_module
 mod_arrays = fortran_module('test_arrays', 'mod_arrays')
 ```
 
 2. Define and generate Python extension
   (only on first run or if library routines have been added/changed)
-```
+```python
 mod_arrays.fdef("""
   subroutine test_vector(vec)
     double precision, dimension(:) :: vec
@@ -38,11 +38,11 @@ Internally, C function headers are generated for CFFI with the required
 representation of array descriptors by the used Fortran compiler.
 
 3. Load interface module to library
-```
+```python
   mod_arrays.load()
 ```
 4. Calling of a subroutine `test_vector` in `mod_arrays` is as simple as
-```
+```python
   vec = np.ones(15)
   mod_arrays.test_vector(vec)
 ```
