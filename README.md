@@ -36,6 +36,7 @@ mod_arrays.compile()
 ```
 Internally, C function headers are generated for CFFI with the required
 representation of array descriptors by the used Fortran compiler.
+
 3. Load interface module to library
 ```
   mod_arrays.load()
