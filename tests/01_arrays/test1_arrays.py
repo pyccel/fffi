@@ -29,11 +29,13 @@ class TestArrays(TestCase):
         os.chdir(cls.cwd)
 
         try:
+            os.system('make clean && make')
+            
             # Reference output
             ref_out = subprocess.check_output('./test_arrays.x')
 
             # Reference output for vector
-            refspl = ref_out.split(b'\n\n\n')
+            refspl = ref_out.replace(b' ',b'').split(b'\n\n\n')
             cls.refvec = np.fromstring(refspl[0], sep='\n')
 
             # Reference output for 2D array
@@ -43,12 +45,11 @@ class TestArrays(TestCase):
             for kcol in range(cls.n):
                 cls.refarr[:, kcol] = np.fromstring(refarrspl[kcol], sep='\n')
 
-            os.system('make clean && make')
             mod_arrays = fortran_module('test_arrays', 'mod_arrays',
                                         path=cls.cwd)
             mod_arrays.cdef("""
-              void {mod}_test_vector(array_1d *vec);
-              void {mod}_test_array_2d(array_2d *arr);
+              void {mod}_test_vector_(array_1d *vec);
+              void {mod}_test_array_2d_(array_2d *arr);
             """)
             mod_arrays.compile()
 
@@ -70,7 +71,9 @@ class TestArrays(TestCase):
         """
 
         vec = np.ones(15)
+        print(vec)
         self.mod_arrays.test_vector(vec)
+        print(vec)
         np.testing.assert_almost_equal(vec, self.refvec)
 
     def test_array_2d(self):
@@ -125,3 +128,8 @@ class TestArrays(TestCase):
 
         stats = snapshot2.compare_to(snapshot1, 'filename')
         self.assertLessEqual(sum(stat.count_diff for stat in stats), statsum)
+
+
+if __name__ == "__main__":
+    test = TestArrays()
+    test.setUpClass()

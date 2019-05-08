@@ -3,20 +3,6 @@ module mod_arrays
 
 contains
 
-  subroutine ones_1d(vec, n)
-    real(8), allocatable, intent(out) :: vec(:)
-    integer, intent(in) :: n
-    allocate(vec(n))
-    vec = 1.0d0
-  end subroutine ones_1d
-
-  subroutine ones_2d(arr, m, n)
-    real(8), allocatable, intent(out) :: arr(:,:)
-    integer, intent(in) :: m, n
-    allocate(arr(m,n))
-    arr = 1.0d0
-  end subroutine ones_2d
-
   subroutine test_vector(vec)
     real(8), intent(inout) :: vec(:)
     integer :: k, n
