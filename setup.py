@@ -3,10 +3,10 @@
 
 import sys
 from setuptools import setup, find_packages
-import pyccel
+#import pyccel
 
 NAME    = 'fffi'
-VERSION = pyccel.__version__
+VERSION = 0.1 #pyccel.__version__
 AUTHOR  = 'Christopher Albert'
 EMAIL   = 'albert@alumni.tugraz.at'
 URL     = 'https://github.com/krystophny/fffi'
