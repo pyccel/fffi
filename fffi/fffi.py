@@ -11,6 +11,7 @@ import os
 import re
 import sys
 import numpy as np
+import subprocess
 from cffi import FFI
 
 from .parser import parse
@@ -18,9 +19,9 @@ from .parser import parse
 log_warn = True
 log_debug = True
 
-def arraydims(compiler, compiler_version):
-    if compiler == 'gnu':
-        if compiler_version >= 8:
+def arraydims(compiler):
+    if compiler['name'] == 'gfortran':
+        if compiler['version'] >= 8:
             return """
               typedef struct array_dims array_dims;
               struct array_dims {
@@ -47,7 +48,7 @@ def arraydims(compiler, compiler_version):
                 ptrdiff_t upper_bound;
               };
             """
-    elif compiler == 'intel':
+    elif compiler['name'] == 'ifort':
             return """
               typedef struct array_dims array_dims;
               struct array_dims {
@@ -58,11 +59,11 @@ def arraydims(compiler, compiler_version):
             """
     else:
         raise NotImplementedError(
-                'Compiler {} not supported. Use gnu or intel'.format(compiler))
+                'Compiler {} not supported. Use gfortran or ifort'.format(compiler))
         
-def arraydescr(compiler, compiler_version):
-    if compiler == 'gnu':
-        if compiler_version >= 8:
+def arraydescr(compiler):
+    if compiler['name'] == 'gfortran':
+        if compiler['version'] >= 8:
             return """
               typedef struct array_{0}d array_{0}d;
               struct array_{0}d {{
@@ -83,7 +84,7 @@ def arraydescr(compiler, compiler_version):
                 struct array_dims dim[{0}];
               }};
             """
-    elif compiler == 'intel':
+    elif compiler['name'] == 'ifort':
             return """     
               typedef struct array_{0}d array_{0}d;
               struct array_{0}d {{
@@ -98,7 +99,7 @@ def arraydescr(compiler, compiler_version):
             """
     else:
         raise NotImplementedError(
-                'Compiler {} not supported. Use gnu or intel'.format(compiler))
+                'Compiler {} not supported. Use gfortran or ifort'.format(compiler))
     
     
 ctypemap = {
@@ -135,7 +136,7 @@ def ccodegen(subprogram):
     return csource
 
 
-def numpy2fortran(ffi, arr, compiler, compiler_version):
+def numpy2fortran(ffi, arr, compiler):
     """
     Converts Fortran-contiguous NumPy array arr into an array descriptor
     compatible with gfortran to be passed to library routines via cffi.
@@ -146,9 +147,9 @@ def numpy2fortran(ffi, arr, compiler, compiler_version):
     ndims = len(arr.shape)
     arrdata = ffi.new('array_{}d*'.format(ndims))
     arrdata.base_addr = ffi.cast('void*', arr.ctypes.data)
-    if compiler == 'gnu':
+    if compiler['name'] == 'gfortran':
         arrdata.offset = 0
-        if compiler_version >= 8:
+        if compiler['version'] >= 8:
             arrdata.span = np.size(arr)*arr.dtype.itemsize
             arrdata.dtype.len = arr.dtype.itemsize
             arrdata.dtype.rank = ndims
@@ -158,7 +159,7 @@ def numpy2fortran(ffi, arr, compiler, compiler_version):
             arrdata.dtype = ndims  # rank of the array
             arrdata.dtype = arrdata.dtype | (3 << 3)  # "3" for float, TODO:others
             arrdata.dtype = arrdata.dtype | (arr.dtype.itemsize << 6)  # no of bytes
-    elif compiler == 'intel':
+    elif compiler['name'] == 'ifort':
         #  TODO: doesn't work yet
         arrdata.elem_size = arr.dtype.itemsize
         arrdata.reserved = 0
@@ -199,7 +200,7 @@ def debug(output):
 
 
 class fortran_module:
-    def __init__(self, library, name, maxdim=7, path=None):
+    def __init__(self, library, name, maxdim=7, path=None, compiler=None):
         self.library = library
         self.name = name
         self.methods = []
@@ -207,10 +208,16 @@ class fortran_module:
         self.csource = ''
         self.loaded = False
         self.path = path
-
-        # TODO: don't hardcode this
-        self.compiler = 'gnu'
-        self.compiler_version = 4
+        self.compiler = compiler
+        
+        if self.compiler == None:
+            libstrings = subprocess.check_output(['strings', 'lib'+library+'.so'])
+            libstrings = libstrings.decode('utf-8').split('\n')
+            for line in libstrings:
+                if line.startswith('GCC'):
+                    major = int(line.split(' ')[-1].split('.')[0])
+                    self.compiler = {'name': 'gfortran', 'version': major} 
+                    break
 
         # Manual path specification is required for tests via `setup.py test`
         # which would not find the extension module otherwise
@@ -236,16 +243,16 @@ class fortran_module:
             elif isinstance(arg, float):
                 cargs.append(self._ffi.new('double*', arg))
             elif isinstance(arg, np.ndarray):
-                cargs.append(numpy2fortran(self._ffi, arg, self.compiler, self.compiler_version))
+                cargs.append(numpy2fortran(self._ffi, arg, self.compiler))
             else:  # TODO: add more basic types
                 raise NotImplementedError('Argument type not understood')
-        if self.compiler == 'gnu':
+        if self.compiler['name'] == 'gfortran':
             funcname = '__'+self.name+'_MOD_'+function
-        elif self.compiler == 'intel':
+        elif self.compiler['name'] == 'ifort':
             funcname = self.name+'_mp_'+function+'_'
         else:
             raise NotImplementedError(
-                    'Compiler {} not supported. Use gnu or intel'.format(self.compiler, self.compiler_version))
+                    'Compiler {} not supported. Use gfortran or ifort'.format(self.compiler))
         func = getattr(self._lib, funcname)
         debug('Calling {}({})'.format(funcname, cargs))
         func(*cargs)
@@ -257,13 +264,13 @@ class fortran_module:
           void {mod}_func() -> void __testmod_MOD_func()
         """
         # GNU specific
-        if self.compiler == 'gnu':
+        if self.compiler['name'] == 'gfortran':
             self.csource += csource.format(mod='__'+self.name+'_MOD')
-        elif self.compiler == 'intel':
+        elif self.compiler['name'] == 'ifort':
             self.csource += csource.format(mod=self.name+'_mp')
         else:
             raise NotImplementedError(
-                    'Compiler {} not supported. Use gnu or intel'.format(self.compiler))
+                    'Compiler {} not supported. Use gfortran or ifort'.format(self.compiler))
         debug('C signatures are\n' + self.csource)
 
     def fdef(self, fsource):
@@ -282,13 +289,6 @@ class fortran_module:
         """
         ffi = FFI()
 
-        structdef = arraydims(self.compiler, self.compiler_version)
-        descr = arraydescr(self.compiler, self.compiler_version)
-        for kdim in range(1, self.maxdim+1):
-            structdef += descr.format(kdim)
-
-        ffi.cdef(structdef+self.csource)
-
         extraargs = []
         if not verbose:
             extraargs.append('-Wno-implicit-function-declaration')
@@ -298,8 +298,14 @@ class fortran_module:
             target = os.path.join(self.path, '_'+self.name+'.so')
         else:
             libpath = '.'
-            target = './_'+self.name+'.so'
+            target = './_'+self.name+'.so'        
 
+        structdef = arraydims(self.compiler)
+        descr = arraydescr(self.compiler)
+        for kdim in range(1, self.maxdim+1):
+            structdef += descr.format(kdim)
+
+        ffi.cdef(structdef+self.csource)
 
         ffi.set_source('_'+self.name,
                        structdef,
@@ -329,12 +335,12 @@ class fortran_module:
         self.methods = []
         ext_methods = dir(self._lib)
         for m in ext_methods:
-            if self.compiler == 'gnu':
+            if self.compiler['name'] == 'gfortran':
                 mname = re.sub('__.+_MOD_', '', m)  # GNU specific
-            elif self.compiler == 'intel':
+            elif self.compiler['name'] == 'ifort':
                 mname = re.sub('__.+_mt_', '', m)
             else:
                 raise NotImplementedError(
-                        'Compiler {} not supported. Use gnu or intel'.format(self.compiler))
+                        'Compiler {} not supported. Use gfortran or ifort'.format(self.compiler))
             self.methods.append(mname)
         self.loaded = True

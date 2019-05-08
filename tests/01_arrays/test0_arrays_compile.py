@@ -55,3 +55,8 @@ class TestArraysCompile(TestCase):
 
         mod_arrays.compile(tmpdir=self.tmpdir)
         
+if __name__ == "__main__":
+    test = TestArraysCompile()
+    test.setUpClass()
+    test.test_compile()
+    test.tearDownClass()
