@@ -7,3 +7,5 @@ _*.c
 *.so
 *.mod
 *.pyc
+coverage.xml
+

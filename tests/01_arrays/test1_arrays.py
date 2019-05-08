@@ -30,7 +30,7 @@ class TestArrays(TestCase):
 
         try:
             os.system('make clean && make')
-            
+
             # Reference output
             ref_out = subprocess.check_output('./test_arrays.x')
 
@@ -47,15 +47,15 @@ class TestArrays(TestCase):
 
             mod_arrays = fortran_module('test_arrays', 'mod_arrays',
                                         path=cls.cwd)
-            
+
             mod_arrays.fdef("""
               subroutine test_vector(vec)
                 double precision, dimension(:) :: vec
               end
-            
+
               subroutine test_array_2d(arr)
                 double precision, dimension(:,:) :: arr
-              end 
+              end
               """)
 
             mod_arrays.compile()
