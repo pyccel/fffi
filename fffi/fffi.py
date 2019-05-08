@@ -18,83 +18,87 @@ from .parser import parse
 log_warn = True
 log_debug = True
 
-compiler = 'gnu'
-compiler_version = 8
-
-if compiler == 'gnu':
-    if compiler_version >= 8:
-        arraydims = """
-          typedef struct array_dims array_dims;
-          struct array_dims {
-            ptrdiff_t stride;
-            ptrdiff_t lower_bound;
-            ptrdiff_t upper_bound;
-          };
-          
-          typedef struct datatype datatype;
-          struct datatype {
-            size_t len;
-            int ver;
-            signed char rank;
-            signed char type;
-            signed short attribute;
-          };
-        """
-        
-        arraydescr = """
-          typedef struct array_{0}d array_{0}d;
-          struct array_{0}d {{
-            void *base_addr;
-            size_t offset;
-            datatype dtype;
-            ptrdiff_t span;
-            struct array_dims dim[{0}];
-          }};
-        """
+def arraydims(compiler, compiler_version):
+    if compiler == 'gnu':
+        if compiler_version >= 8:
+            return """
+              typedef struct array_dims array_dims;
+              struct array_dims {
+                ptrdiff_t stride;
+                ptrdiff_t lower_bound;
+                ptrdiff_t upper_bound;
+              };
+              
+              typedef struct datatype datatype;
+              struct datatype {
+                size_t len;
+                int ver;
+                signed char rank;
+                signed char type;
+                signed short attribute;
+              };
+            """
+        else:
+            return """
+              typedef struct array_dims array_dims;
+              struct array_dims {
+                ptrdiff_t stride;
+                ptrdiff_t lower_bound;
+                ptrdiff_t upper_bound;
+              };
+            """
+    elif compiler == 'intel':
+            return """
+              typedef struct array_dims array_dims;
+              struct array_dims {
+                uintptr_t upper_bound;
+                uintptr_t stride;
+                uintptr_t lower_bound;
+              };
+            """
     else:
-        arraydims = """
-          typedef struct array_dims array_dims;
-          struct array_dims {
-            ptrdiff_t stride;
-            ptrdiff_t lower_bound;
-            ptrdiff_t upper_bound;
-          };
-        """
+        raise NotImplementedError(
+                'Compiler {} not supported. Use gnu or intel'.format(compiler))
         
-        arraydescr = """     
-          typedef struct array_{0}d array_{0}d;
-          struct array_{0}d {{
-            void *base_addr;
-            size_t offset;
-            ptrdiff_t dtype;
-            struct array_dims dim[{0}];
-          }};
-        """
-elif compiler == 'intel':
-        arraydims = """
-          typedef struct array_dims array_dims;
-          struct array_dims {
-            uintptr_t upper_bound;
-            uintptr_t stride;
-            uintptr_t lower_bound;
-          };
-        """
-        
-        arraydescr = """     
-          typedef struct array_{0}d array_{0}d;
-          struct array_{0}d {{
-            void *base_addr;
-            uintptr_t elem_size;
-            uintptr_t reserved;
-            uintptr_t info;
-            uintptr_t rank;
-            uintptr_t reserved2;
-            struct array_dims dim[{0}];
-          }};
-        """
-else:
-    raise NotImplementedError(
-            'Compiler {} not supported. Use gnu or intel'.format(compiler))
+def arraydescr(compiler, compiler_version):
+    if compiler == 'gnu':
+        if compiler_version >= 8:
+            return """
+              typedef struct array_{0}d array_{0}d;
+              struct array_{0}d {{
+                void *base_addr;
+                size_t offset;
+                datatype dtype;
+                ptrdiff_t span;
+                struct array_dims dim[{0}];
+              }};
+            """
+        else:
+            return """     
+              typedef struct array_{0}d array_{0}d;
+              struct array_{0}d {{
+                void *base_addr;
+                size_t offset;
+                ptrdiff_t dtype;
+                struct array_dims dim[{0}];
+              }};
+            """
+    elif compiler == 'intel':
+            return """     
+              typedef struct array_{0}d array_{0}d;
+              struct array_{0}d {{
+                void *base_addr;
+                uintptr_t elem_size;
+                uintptr_t reserved;
+                uintptr_t info;
+                uintptr_t rank;
+                uintptr_t reserved2;
+                struct array_dims dim[{0}];
+              }};
+            """
+    else:
+        raise NotImplementedError(
+                'Compiler {} not supported. Use gnu or intel'.format(compiler))
     
     
 ctypemap = {
@@ -131,7 +135,7 @@ def ccodegen(subprogram):
     return csource
 
 
-def numpy2fortran(ffi, arr):
+def numpy2fortran(ffi, arr, compiler, compiler_version):
     """
     Converts Fortran-contiguous NumPy array arr into an array descriptor
     compatible with gfortran to be passed to library routines via cffi.
@@ -204,6 +208,10 @@ class fortran_module:
         self.loaded = False
         self.path = path
 
+        # TODO: don't hardcode this
+        self.compiler = 'gnu'
+        self.compiler_version = 4
+
         # Manual path specification is required for tests via `setup.py test`
         # which would not find the extension module otherwise
         if self.path not in sys.path:
@@ -228,16 +236,16 @@ class fortran_module:
             elif isinstance(arg, float):
                 cargs.append(self._ffi.new('double*', arg))
             elif isinstance(arg, np.ndarray):
-                cargs.append(numpy2fortran(self._ffi, arg))
+                cargs.append(numpy2fortran(self._ffi, arg, self.compiler, self.compiler_version))
             else:  # TODO: add more basic types
                 raise NotImplementedError('Argument type not understood')
-        if compiler == 'gnu':
+        if self.compiler == 'gnu':
             funcname = '__'+self.name+'_MOD_'+function
-        elif compiler == 'intel':
+        elif self.compiler == 'intel':
             funcname = self.name+'_mp_'+function+'_'
         else:
             raise NotImplementedError(
-                    'Compiler {} not supported. Use gnu or intel'.format(compiler))
+                    'Compiler {} not supported. Use gnu or intel'.format(self.compiler, self.compiler_version))
         func = getattr(self._lib, funcname)
         debug('Calling {}({})'.format(funcname, cargs))
         func(*cargs)
@@ -249,13 +257,13 @@ class fortran_module:
           void {mod}_func() -> void __testmod_MOD_func()
         """
         # GNU specific
-        if compiler == 'gnu':
+        if self.compiler == 'gnu':
             self.csource += csource.format(mod='__'+self.name+'_MOD')
-        elif compiler == 'intel':
+        elif self.compiler == 'intel':
             self.csource += csource.format(mod=self.name+'_mp')
         else:
             raise NotImplementedError(
-                    'Compiler {} not supported. Use gnu or intel'.format(compiler))
+                    'Compiler {} not supported. Use gnu or intel'.format(self.compiler))
         debug('C signatures are\n' + self.csource)
 
     def fdef(self, fsource):
@@ -274,9 +282,10 @@ class fortran_module:
         """
         ffi = FFI()
 
-        structdef = arraydims
+        structdef = arraydims(self.compiler, self.compiler_version)
+        descr = arraydescr(self.compiler, self.compiler_version)
         for kdim in range(1, self.maxdim+1):
-            structdef += arraydescr.format(kdim)
+            structdef += descr.format(kdim)
 
         ffi.cdef(structdef+self.csource)
 
@@ -320,12 +329,12 @@ class fortran_module:
         self.methods = []
         ext_methods = dir(self._lib)
         for m in ext_methods:
-            if compiler == 'gnu':
+            if self.compiler == 'gnu':
                 mname = re.sub('__.+_MOD_', '', m)  # GNU specific
-            elif compiler == 'intel':
+            elif self.compiler == 'intel':
                 mname = re.sub('__.+_mt_', '', m)
             else:
                 raise NotImplementedError(
-                        'Compiler {} not supported. Use gnu or intel'.format(compiler))
+                        'Compiler {} not supported. Use gnu or intel'.format(self.compiler))
             self.methods.append(mname)
         self.loaded = True
