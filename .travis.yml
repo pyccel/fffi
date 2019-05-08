@@ -8,7 +8,7 @@ env:
     secure: EycKlVZ4GEsoNahuRXQiXHZRGmuLtYRlvcl7NvA84/PVdxmF2H32SFzqSRW/dDkGvH42ZWXEe2Xw843zmD0vDnZbHm++Fbf5tT+yQrCEWRVTnQ4oBGHdF6QRjNxlSB9eoIxEMLio657CQt8G0+Rf9WlXQibL7/UAqtSo3pMjmN4u4AEQPCYuc2Uh2N4jLXkf5+IEz8gfjgdkAgcFZ9qSGidw9VMCGOkdP7B3bP/UrmoJEWw6+K48ZmO0lryyZkyqL4hYRfmJnAnTvcfFqhzVzsXMQ36DU4zDskovecuB25U05AXCJhTQcIrG2oRwjpG+mSkTq+g/c7HlgkXjYCV154OfaJ8Ja2f//nmKVb1gjAUVJggS+xkWKfXxG3ENd9u+DDqSP5dk+wiPBuqQsz540djki1CxP2AA0LxwXUC0FRl+CEq9OGEOwwYVuA2TYAuB6oiewiGYP7rFw8gUQ3DuSDphveP5BbT4VroMBjYA+19RlRMIS5zerIYqeOLh5OWKtmMVnXdLHvyH0sKJ52ZwyCKd7zuxpAaHToZtDWkyFPKmLXuHNZ2980sEDQUrjkLNk6EQ+t73UhWDbVadMRlBvJTfTVsE1i1x3WGAAhyIU9ByWfC7gk0gW1qA9CM6ot86nvfNSfbtuaPdBSVOBOem7kdtXMPCDwc5HsTG0odZQKw=
 
 before_install:
-  - apt install gfortran
+  - sudo apt-get install gfortran
   - pip install -r requirements.txt
 install:
   - pip install
