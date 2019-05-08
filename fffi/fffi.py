@@ -96,6 +96,39 @@ else:
     raise NotImplementedError(
             'Compiler {} not supported. Use gnu or intel'.format(compiler))
     
+    
+ctypemap = {
+            ('int', 1): 'int8_t',
+            ('int', 2): 'int16_t',
+            ('int', 4): 'int32_t',
+            ('int', 8): 'int64_t',
+            ('real', 4): 'float',
+            ('real', 8): 'double'
+        }
+
+def ccodegen(subprogram):
+    cargs = []
+    for arg in subprogram.args:
+        attrs = subprogram.namespace[arg]
+        dtype = attrs.dtype
+        rank = attrs.rank
+        precision = attrs.precision
+        debug('{} rank={} bytes={}'.format(dtype, rank, precision))
+        
+        ctypename = None
+        
+        if rank == 0:
+            ctypename = ctypemap[(dtype, precision)]
+        else:
+            ctypename = 'array_{}d'.format(rank)
+            
+        if ctypename == None:
+            raise NotImplementedError('{} rank={}'.format(dtype, rank))
+            
+        cargs.append('{} *{}'.format(ctypename, arg))
+                
+    csource = 'void {{mod}}_{}({});\n'.format(subprogram.name, ','.join(cargs))
+    return csource
 
 
 def numpy2fortran(ffi, arr):
@@ -231,27 +264,7 @@ class fortran_module:
         csource = ''
         for subname, subp in ast.subprograms.items():
             debug('Adding subprogram {}({})'.format(subname, ','.join(subp.args)))
-            
-            cargs = []
-            for arg in subp.args:
-                dtype = subp.namespace[arg].dtype
-                rank = subp.namespace[arg].rank
-                debug('{} rank={}'.format(dtype, rank))
-                
-                ctypename = None
-                
-                if rank == 0:
-                    if dtype == 'real':
-                        ctypename = 'double'
-                else:
-                    ctypename = 'array_{}d'.format(rank)
-                    
-                if ctypename == None:
-                    raise NotImplementedError('{} rank={}'.format(dtype, rank))
-                    
-                cargs.append('{} *{}'.format(ctypename, arg))
-                        
-            csource += 'void {{mod}}_{}({});\n'.format(subname, ','.join(cargs))
+            csource += ccodegen(subp)
         
         self.cdef(csource)
 

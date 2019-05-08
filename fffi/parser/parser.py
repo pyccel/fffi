@@ -35,6 +35,7 @@ class Variable():
         self.is_pointer = is_pointer
         self.is_target = is_target
         self.shape = shape
+        self.precision = precision
         
 # TODO: integrate again with pyccel
 dtype_registry = {  'real':('real',8),
@@ -170,7 +171,7 @@ class Declaration(object):
 #                                cls_base=None,
 #                                cls_parameters=None,
 #                                order=,
-#                                precision=precision,
+                                precision=precision
                               )
                 self.namespace[name] = var
 
