@@ -62,7 +62,7 @@ class Fortran(object):
         self.statements = kwargs.pop('statements', [])
         self.modules = {}
         self.subprograms = {}
-        self.declarations = {}
+        self.namespace = {}
         
         for stmt in self.statements:
             if isinstance(stmt, Module):
@@ -70,7 +70,7 @@ class Fortran(object):
             elif isinstance(stmt, InternalSubprogram):
                 self.subprograms[stmt.name] = stmt
             elif isinstance(stmt, Declaration):
-                self.declarations[stmt.name] = stmt
+                self.namespace = {**self.namespace, **stmt.namespace}
             else:
                 raise NotImplementedError('TODO {}'.format(type(stmt)))
         
