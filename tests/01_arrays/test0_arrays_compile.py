@@ -54,3 +54,4 @@ class TestArraysCompile(TestCase):
         """)
 
         mod_arrays.compile(tmpdir=self.tmpdir)
+        

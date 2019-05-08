@@ -3,12 +3,60 @@ Fortran:
 ;
 
 Statement: 
-  Declaration
+    InternalSubprogram
+  | Declaration
+;
+
+// R1104
+// TODO: distinguish module subprograms
+Module:
+  'MODULE' name=ID
+  declarations*=Declaration
+  ( 'CONTAINS'
+    subprograms*=InternalSubprogram ) ?
+  'END' ( 'MODULE' (ID)? )?
+;
+
+// R211
+// TODO: allow other stuff in subprograms to parse declarations of actual code
+InternalSubprogram:
+  heading=SubProgramHeading
+  declarations*=Declaration
+  // execution_part=/(!END)*/
+  ending=SubProgramEnding
+;
+
+// R1224, R1225
+SubProgramHeading:
+    ( (Prefix)? DeclarationType 'FUNCTION' name=ID '(' arguments*=ID[','] ')' (Suffix)? )
+  | ( (Prefix)? 'SUBROUTINE' name=ID ( '(' arguments*=ID[','] ')' )? (BindingSpec)? )
+;
+
+
+
+// R1228
+Prefix:
+    'RECURSIVE'
+  | 'PURE'
+  | 'ELEMENTAL'
+;
+
+// R1229
+Suffix:
+    'RESULT' '(' name=ID ')' (BindingSpec)?
+  | BindingSpec ( 'RESULT' '(' name=ID ')' )?
+;
+
+// R1230, R1234
+// TODO: make END SUBROUTINE name work
+SubProgramEnding[ws='[ \t]']:
+      ( 'END' )
+    | ( 'END' ('SUBROUTINE' | 'FUNCTION') )
 ;
 
 // R501
 Declaration:
-   dtype=DeclarationType ((',' attributs*=DeclarationAttribut[','])? DEF)? entities*=DeclarationEntity[',']
+   dtype=DeclarationType ((',' attributes*=DeclarationAttribute[','])? DEF)? entities*=DeclarationEntity[',']
 ;
 
 // R502
@@ -19,13 +67,13 @@ DeclarationType:
 ;
 
 // R503
-DeclarationAttribut:
+DeclarationAttribute:
       key='ALLOCATABLE'
     | key='ASYNCHRONOUS'
-//    | 'BIND'( C [ , NAME= scalar-character-initialization-expression ] )
+// TODO    | key='BIND' '(' 'C' ( ',' 'NAME=' name=ID )? ')'
     | key='DIMENSION' '(' value=ArraySpec ')'
     | key='EXTERNAL'
-//    | 'INTENT' ( intent-spec )
+    | key='INTENT' '(' ( 'IN' | 'OUT' | 'INOUT' ) ')'
     | key='INTRINSIC'
     | key='OPTIONAL'
     | key='PARAMETER'
@@ -44,12 +92,17 @@ DeclarationEntity: DeclarationEntityObject | DeclarationEntityFunction;
 
 // R504
 DeclarationEntityObject:
-    name=ID // TODO add the remaining attributs
+    name=ID // TODO add the remaining attributes
 ;
 
 // R504
 DeclarationEntityFunction:
     name=ID (STAR charlen=INT)?
+;
+
+// R509
+BindingSpec:
+    'BIND' '(' 'C' ( ',' 'NAME=' name=ID )? ')'
 ;
 
 // R510

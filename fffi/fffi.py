@@ -14,26 +14,86 @@ import numpy as np
 from cffi import FFI
 
 log_warn = True
-log_debug = False
+log_debug = True
 
-arraydims = """
-  typedef struct array_dims array_dims;
-  struct array_dims {
-    ptrdiff_t stride;
-    ptrdiff_t lower_bound;
-    ptrdiff_t upper_bound;
-  };
-"""
+compiler = 'intel'
+compiler_version = 9
 
-arraydescr = """
-  typedef struct array_{0}d array_{0}d;
-  struct array_{0}d {{
-    void *base_addr;
-    size_t offset;
-    ptrdiff_t dtype;
-    struct array_dims dim[{0}];
-  }};
-"""
+if compiler == 'gnu':
+    if compiler_version >= 8:
+        arraydims = """
+          typedef struct array_dims array_dims;
+          struct array_dims {
+            ptrdiff_t stride;
+            ptrdiff_t lower_bound;
+            ptrdiff_t upper_bound;
+          };
+          
+          typedef struct datatype datatype;
+          struct datatype {
+            size_t len;
+            int ver;
+            signed char rank;
+            signed char type;
+            signed short attribute;
+          };
+        """
+        
+        arraydescr = """
+          typedef struct array_{0}d array_{0}d;
+          struct array_{0}d {{
+            void *base_addr;
+            size_t offset;
+            datatype dtype;
+            ptrdiff_t span;
+            struct array_dims dim[{0}];
+          }};
+        """
+    else:
+        arraydims = """
+          typedef struct array_dims array_dims;
+          struct array_dims {
+            ptrdiff_t stride;
+            ptrdiff_t lower_bound;
+            ptrdiff_t upper_bound;
+          };
+        """
+        
+        arraydescr = """     
+          typedef struct array_{0}d array_{0}d;
+          struct array_{0}d {{
+            void *base_addr;
+            size_t offset;
+            ptrdiff_t dtype;
+            struct array_dims dim[{0}];
+          }};
+        """
+elif compiler == 'intel':
+        arraydims = """
+          typedef struct array_dims array_dims;
+          struct array_dims {
+            uintptr_t upper_bound;
+            uintptr_t stride;
+            uintptr_t lower_bound;
+          };
+        """
+        
+        arraydescr = """     
+          typedef struct array_{0}d array_{0}d;
+          struct array_{0}d {{
+            void *base_addr;
+            uintptr_t elem_size;
+            uintptr_t reserved;
+            uintptr_t info;
+            uintptr_t rank;
+            uintptr_t reserved2;
+            struct array_dims dim[{0}];
+          }};
+        """
+else:
+    raise NotImplementedError(
+            'Compiler {} not supported. Use gnu or intel'.format(compiler))
+    
 
 
 def numpy2fortran(ffi, arr):
@@ -46,12 +106,26 @@ def numpy2fortran(ffi, arr):
 
     ndims = len(arr.shape)
     arrdata = ffi.new('array_{}d*'.format(ndims))
-    arrdata.offset = 0
-
     arrdata.base_addr = ffi.cast('void*', arr.ctypes.data)
-    arrdata.dtype = ndims  # rank of the array
-    arrdata.dtype = arrdata.dtype | (3 << 3)  # "3" for float, TODO:others
-    arrdata.dtype = arrdata.dtype | (arr.dtype.itemsize << 6)  # no of bytes
+    if compiler == 'gnu':
+        arrdata.offset = 0
+        if compiler_version >= 8:
+            arrdata.span = np.size(arr)*arr.dtype.itemsize
+            arrdata.dtype.len = arr.dtype.itemsize
+            arrdata.dtype.rank = ndims
+            arrdata.dtype.type = 3 # "3" for float, TODO:others
+            arrdata.dtype.attribute = 0
+        else:
+            arrdata.dtype = ndims  # rank of the array
+            arrdata.dtype = arrdata.dtype | (3 << 3)  # "3" for float, TODO:others
+            arrdata.dtype = arrdata.dtype | (arr.dtype.itemsize << 6)  # no of bytes
+    elif compiler == 'intel':
+        #  TODO: doesn't work yet
+        arrdata.elem_size = arr.dtype.itemsize
+        arrdata.reserved = 0
+        arrdata.info = int('10000111', 2)
+        arrdata.rank = ndims
+        arrdata.reserved2 = 0
 
     stride = 1
     for kd in range(ndims):
@@ -122,8 +196,13 @@ class fortran_module:
                 cargs.append(numpy2fortran(self._ffi, arg))
             else:  # TODO: add more basic types
                 raise NotImplementedError('Argument type not understood')
-        # GNU specific
-        funcname = '__'+self.name+'_MOD_'+function
+        if compiler == 'gnu':
+            funcname = '__'+self.name+'_MOD_'+function
+        elif compiler == 'intel':
+            funcname = self.name+'_mp_'+function+'_'
+        else:
+            raise NotImplementedError(
+                    'Compiler {} not supported. Use gnu or intel'.format(compiler))
         func = getattr(self._lib, funcname)
         debug('Calling {}({})'.format(funcname, cargs))
         func(*cargs)
@@ -135,7 +214,13 @@ class fortran_module:
           void {mod}_func() -> void __testmod_MOD_func()
         """
         # GNU specific
-        self.csource += csource.format(mod='__'+self.name+'_MOD')
+        if compiler == 'gnu':
+            self.csource += csource.format(mod='__'+self.name+'_MOD')
+        elif compiler == 'intel':
+            self.csource += csource.format(mod=self.name+'_mp')
+        else:
+            raise NotImplementedError(
+                    'Compiler {} not supported. Use gnu or intel'.format(compiler))
         debug('C signatures are\n' + self.csource)
 
     def fdef(self, fsource):
@@ -193,6 +278,12 @@ class fortran_module:
         self.methods = []
         ext_methods = dir(self._lib)
         for m in ext_methods:
-            mname = re.sub('__.+_MOD_', '', m)  # GNU specific
+            if compiler == 'gnu':
+                mname = re.sub('__.+_MOD_', '', m)  # GNU specific
+            elif compiler == 'intel':
+                mname = re.sub('__.+_mt_', '', m)
+            else:
+                raise NotImplementedError(
+                        'Compiler {} not supported. Use gnu or intel'.format(compiler))
             self.methods.append(mname)
         self.loaded = True
