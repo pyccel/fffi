@@ -57,7 +57,7 @@ class TestArrays(TestCase):
                 double precision, dimension(:,:) :: arr
               end 
               """)
-            
+
             mod_arrays.compile()
 
             # recreate module to check if it works independently now
