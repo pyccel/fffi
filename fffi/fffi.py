@@ -13,11 +13,13 @@ import sys
 import numpy as np
 from cffi import FFI
 
+from .parser import parse
+
 log_warn = True
 log_debug = True
 
-compiler = 'intel'
-compiler_version = 9
+compiler = 'gnu'
+compiler_version = 8
 
 if compiler == 'gnu':
     if compiler_version >= 8:
@@ -224,7 +226,34 @@ class fortran_module:
         debug('C signatures are\n' + self.csource)
 
     def fdef(self, fsource):
-        raise NotImplementedError('will allow to use Fortran signatures')
+        ast = parse(fsource)
+        
+        csource = ''
+        for subname, subp in ast.subprograms.items():
+            debug('Adding subprogram {}({})'.format(subname, ','.join(subp.args)))
+            
+            cargs = []
+            for arg in subp.args:
+                dtype = subp.namespace[arg].dtype
+                rank = subp.namespace[arg].rank
+                debug('{} rank={}'.format(dtype, rank))
+                
+                ctypename = None
+                
+                if rank == 0:
+                    if dtype == 'real':
+                        ctypename = 'double'
+                else:
+                    ctypename = 'array_{}d'.format(rank)
+                    
+                if ctypename == None:
+                    raise NotImplementedError('{} rank={}'.format(dtype, rank))
+                    
+                cargs.append('{} *{}'.format(ctypename, arg))
+                        
+            csource += 'void {{mod}}_{}({});\n'.format(subname, ','.join(cargs))
+        
+        self.cdef(csource)
 
     def compile(self, tmpdir='.', verbose=0, debugflag=None):
         """

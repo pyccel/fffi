@@ -47,10 +47,17 @@ class TestArrays(TestCase):
 
             mod_arrays = fortran_module('test_arrays', 'mod_arrays',
                                         path=cls.cwd)
-            mod_arrays.cdef("""
-              void {mod}_test_vector_(array_1d *vec);
-              void {mod}_test_array_2d_(array_2d *arr);
-            """)
+            
+            mod_arrays.fdef("""
+              subroutine test_vector(vec)
+                double precision, dimension(:) :: vec
+              end
+            
+              subroutine test_array_2d(arr)
+                double precision, dimension(:,:) :: arr
+              end 
+              """)
+            
             mod_arrays.compile()
 
             # recreate module to check if it works independently now

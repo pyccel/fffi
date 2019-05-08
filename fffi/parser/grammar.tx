@@ -3,7 +3,8 @@ Fortran:
 ;
 
 Statement: 
-    InternalSubprogram
+    Module
+  | InternalSubprogram
   | Declaration
 ;
 
@@ -14,7 +15,7 @@ Module:
   declarations*=Declaration
   ( 'CONTAINS'
     subprograms*=InternalSubprogram ) ?
-  'END' ( 'MODULE' (ID)? )?
+  'END' // TODO ( 'MODULE' (ID)? )?
 ;
 
 // R211
@@ -73,7 +74,7 @@ DeclarationAttribute:
 // TODO    | key='BIND' '(' 'C' ( ',' 'NAME=' name=ID )? ')'
     | key='DIMENSION' '(' value=ArraySpec ')'
     | key='EXTERNAL'
-    | key='INTENT' '(' ( 'IN' | 'OUT' | 'INOUT' ) ')'
+    | key='INTENT' '(' ( 'INOUT' | 'IN' | 'OUT' ) ')'
     | key='INTRINSIC'
     | key='OPTIONAL'
     | key='PARAMETER'

@@ -38,20 +38,20 @@ class Variable():
         
 # TODO: integrate again with pyccel
 dtype_registry = {  'real':('real',8),
-                     'double':('real',8),
-                     'float':('real',8),
-                     'float32':('real',4),
-                     'float64':('real',8),
-                     'complex':('complex',8),
-                     'complex64':('complex',4),
-                     'complex128':('complex',8),
-                     'int8' :('int',1),
-                     'int16':('int',2),
-                     'int32':('int',4),
-                     'int64':('int',8),
-                     'int'  :('int',4),
-                     'integer':('int',4),
-                     'bool' :('bool',1)}
+                    'double':('real',8),
+                    'float':('real',8),
+                    'float32':('real',4),
+                    'float64':('real',8),
+                    'complex':('complex',8),
+                    'complex64':('complex',4),
+                    'complex128':('complex',8),
+                    'int8' :('int',1),
+                    'int16':('int',2),
+                    'int32':('int',4),
+                    'int64':('int',8),
+                    'int'  :('int',4),
+                    'integer':('int',4),
+                    'bool' :('bool',1)}
 
 #==============================================================================
 
@@ -59,6 +59,26 @@ class Fortran(object):
     """Class for Fortran syntax."""
     def __init__(self, *args, **kwargs):
         self.statements = kwargs.pop('statements', [])
+        self.modules = {}
+        self.subprograms = {}
+        self.declarations = {}
+        
+        for stmt in self.statements:
+            if isinstance(stmt, Module):
+                self.modules[stmt.name] = stmt
+            elif isinstance(stmt, InternalSubprogram):
+                self.subprograms[stmt.name] = stmt
+            elif isinstance(stmt, Declaration):
+                self.declarations[stmt.name] = stmt
+            else:
+                raise NotImplementedError('TODO {}'.format(type(stmt)))
+        
+class Module(object):
+    """Class representing a Fortran module."""
+    def __init__(self, *args, **kwargs):
+        self.name = kwargs.pop('name')
+        self.declarations = kwargs.pop('declarations', []) # optional
+        self.subprograms = kwargs.pop('subprograms', []) # optional
         
 class InternalSubprogram(object):
     """Class representing a Fortran internal subprogram."""
@@ -68,6 +88,7 @@ class InternalSubprogram(object):
         self.ending = kwargs.pop('ending')
         
         self.name = self.heading.name
+        self.args = self.heading.arguments
         self.namespace = {}
         
         for decl in self.declarations:
@@ -231,6 +252,7 @@ def parse(inputs, debug=False):
     grammar = join(this_folder, 'grammar.tx')
 
     classes = [Fortran,
+               Module,
                InternalSubprogram,
                Declaration,
                DeclarationAttribute,
@@ -247,16 +269,6 @@ def parse(inputs, debug=False):
 
     else:
         ast = meta.model_from_str(inputs)
-    
-    for stmt in ast.statements:
-        if isinstance(stmt, InternalSubprogram):
-            print(stmt.name)
-            print(stmt.namespace)
-        elif isinstance(stmt, Declaration):
-            print(stmt.namespace)
-        else:
-            raise NotImplementedError('TODO {}'.format(type(stmt)))
-
 
 #    print(namespace)
 #    for k,v in namespace.items():
