@@ -1,12 +1,10 @@
 # -*- coding: UTF-8 -*-
 #! /usr/bin/python
 
-import sys
 from setuptools import setup, find_packages
-#import pyccel
 
 NAME    = 'fffi'
-VERSION = 0.1 #pyccel.__version__
+VERSION = 0.1
 AUTHOR  = 'Christopher Albert'
 EMAIL   = 'albert@alumni.tugraz.at'
 URL     = 'https://github.com/krystophny/fffi'

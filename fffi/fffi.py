@@ -29,7 +29,7 @@ def arraydims(compiler):
                 ptrdiff_t lower_bound;
                 ptrdiff_t upper_bound;
               };
-              
+
               typedef struct datatype datatype;
               struct datatype {
                 size_t len;
@@ -60,7 +60,7 @@ def arraydims(compiler):
     else:
         raise NotImplementedError(
                 'Compiler {} not supported. Use gfortran or ifort'.format(compiler))
-        
+
 def arraydescr(compiler):
     if compiler['name'] == 'gfortran':
         if compiler['version'] >= 8:
@@ -75,7 +75,7 @@ def arraydescr(compiler):
               }};
             """
         else:
-            return """     
+            return """
               typedef struct array_{0}d array_{0}d;
               struct array_{0}d {{
                 void *base_addr;
@@ -85,7 +85,7 @@ def arraydescr(compiler):
               }};
             """
     elif compiler['name'] == 'ifort':
-            return """     
+            return """
               typedef struct array_{0}d array_{0}d;
               struct array_{0}d {{
                 void *base_addr;
@@ -100,8 +100,8 @@ def arraydescr(compiler):
     else:
         raise NotImplementedError(
                 'Compiler {} not supported. Use gfortran or ifort'.format(compiler))
-    
-    
+
+
 ctypemap = {
             ('int', 1): 'int8_t',
             ('int', 2): 'int16_t',
@@ -119,19 +119,19 @@ def ccodegen(subprogram):
         rank = attrs.rank
         precision = attrs.precision
         debug('{} rank={} bytes={}'.format(dtype, rank, precision))
-        
+
         ctypename = None
-        
+
         if rank == 0:
             ctypename = ctypemap[(dtype, precision)]
         else:
             ctypename = 'array_{}d'.format(rank)
-            
+
         if ctypename == None:
             raise NotImplementedError('{} rank={}'.format(dtype, rank))
-            
+
         cargs.append('{} *{}'.format(ctypename, arg))
-                
+
     csource = 'void {{mod}}_{}({});\n'.format(subprogram.name, ','.join(cargs))
     return csource
 
@@ -180,7 +180,7 @@ def numpy2fortran(ffi, arr, compiler):
 def warn(output):
     caller_frame = inspect.currentframe().f_back
     (filename, line_number,
-     function_name, lines, index) = inspect.getframeinfo(caller_frame)
+     function_name, _, _) = inspect.getframeinfo(caller_frame)
     filename = os.path.split(filename)[-1]
     print('')
     print('WARNING {}:{} {}():'.format(filename, line_number, function_name))
@@ -192,7 +192,7 @@ def debug(output):
         return
     caller_frame = inspect.currentframe().f_back
     (filename, line_number,
-     function_name, lines, index) = inspect.getframeinfo(caller_frame)
+     function_name, _, _) = inspect.getframeinfo(caller_frame)
     filename = os.path.split(filename)[-1]
     print('')
     print('DEBUG {}:{} {}():'.format(filename, line_number, function_name))
@@ -209,14 +209,14 @@ class fortran_module:
         self.loaded = False
         self.path = path
         self.compiler = compiler
-        
+
         if self.compiler == None:
             libstrings = subprocess.check_output(['strings', 'lib'+library+'.so'])
             libstrings = libstrings.decode('utf-8').split('\n')
             for line in libstrings:
                 if line.startswith('GCC'):
                     major = int(line.split(' ')[-1].split('.')[0])
-                    self.compiler = {'name': 'gfortran', 'version': major} 
+                    self.compiler = {'name': 'gfortran', 'version': major}
                     break
 
         # Manual path specification is required for tests via `setup.py test`
@@ -275,12 +275,12 @@ class fortran_module:
 
     def fdef(self, fsource):
         ast = parse(fsource)
-        
+
         csource = ''
         for subname, subp in ast.subprograms.items():
             debug('Adding subprogram {}({})'.format(subname, ','.join(subp.args)))
             csource += ccodegen(subp)
-        
+
         self.cdef(csource)
 
     def compile(self, tmpdir='.', verbose=0, debugflag=None):
@@ -298,7 +298,7 @@ class fortran_module:
             target = os.path.join(self.path, '_'+self.name+'.so')
         else:
             libpath = '.'
-            target = './_'+self.name+'.so'        
+            target = './_'+self.name+'.so'
 
         structdef = arraydims(self.compiler)
         descr = arraydescr(self.compiler)

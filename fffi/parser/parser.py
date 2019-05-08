@@ -36,7 +36,7 @@ class Variable():
         self.is_target = is_target
         self.shape = shape
         self.precision = precision
-        
+
 # TODO: integrate again with pyccel
 dtype_registry = {  'real':('real',8),
                     'double':('real',8),
@@ -63,7 +63,7 @@ class Fortran(object):
         self.modules = {}
         self.subprograms = {}
         self.namespace = {}
-        
+
         for stmt in self.statements:
             if isinstance(stmt, Module):
                 self.modules[stmt.name] = stmt
@@ -73,40 +73,40 @@ class Fortran(object):
                 self.namespace = {**self.namespace, **stmt.namespace}
             else:
                 raise NotImplementedError('TODO {}'.format(type(stmt)))
-        
+
 class Module(object):
     """Class representing a Fortran module."""
     def __init__(self, *args, **kwargs):
         self.name = kwargs.pop('name')
         self.declarations = kwargs.pop('declarations', []) # optional
         self.subprograms = kwargs.pop('subprograms', []) # optional
-        
+
 class InternalSubprogram(object):
     """Class representing a Fortran internal subprogram."""
     def __init__(self, **kwargs):
         self.heading = kwargs.pop('heading')
         self.declarations = kwargs.pop('declarations', []) # optional
         self.ending = kwargs.pop('ending')
-        
+
         self.name = self.heading.name
         self.args = self.heading.arguments
         self.namespace = {}
-        
+
         for decl in self.declarations:
             self.namespace = {**self.namespace, **decl.namespace}
-        
-        
+
+
 class SubprogramHeading(object):
     """Class representing a Fortran internal subprogram."""
     def __init__(self, **kwargs):
         self.name = kwargs.pop('name')
         self.arguments = kwargs.pop('arguments', []) # optional
-        
+
 class SubprogramEnding(object):
     """Class representing a Fortran internal subprogram."""
     def __init__(self, **kwargs):
         self.name = kwargs.pop('name')
-        
+
 class InternalSubprogramHeading(object):
     """Class representing a Fortran internal subprogram."""
     def __init__(self, **kwargs):
@@ -120,7 +120,7 @@ class Declaration(object):
         self.attributes = kwargs.pop('attributes', []) # this is optional
         self.entities  = kwargs.pop('entities')
         self._build_namespace()
-        
+
     def _build_namespace(self):
             self.namespace = {}
             # ...
@@ -298,7 +298,7 @@ if __name__ == '__main__':
                   integer, dimension(:), intent(out) :: x
                   integer :: y
                 end
-                
+
                 SUBROUTINE tes
                   integer, intent(out) :: a
                   integer :: b
