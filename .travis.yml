@@ -12,5 +12,5 @@ install:
 script:
 - coverage run setup.py test
 - coverage xml
-- export CODACY_PROJECT_TOKEN=$codacy_token
-- python-codacy-coverage -r coverage.xml
+- python-codacy-coverage -token $codacy_token
+
