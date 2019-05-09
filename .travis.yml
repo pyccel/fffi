@@ -1,20 +1,16 @@
 language: python
-
 python:
 - '3.6'
-
 env:
   global:
-    secure: EycKlVZ4GEsoNahuRXQiXHZRGmuLtYRlvcl7NvA84/PVdxmF2H32SFzqSRW/dDkGvH42ZWXEe2Xw843zmD0vDnZbHm++Fbf5tT+yQrCEWRVTnQ4oBGHdF6QRjNxlSB9eoIxEMLio657CQt8G0+Rf9WlXQibL7/UAqtSo3pMjmN4u4AEQPCYuc2Uh2N4jLXkf5+IEz8gfjgdkAgcFZ9qSGidw9VMCGOkdP7B3bP/UrmoJEWw6+K48ZmO0lryyZkyqL4hYRfmJnAnTvcfFqhzVzsXMQ36DU4zDskovecuB25U05AXCJhTQcIrG2oRwjpG+mSkTq+g/c7HlgkXjYCV154OfaJ8Ja2f//nmKVb1gjAUVJggS+xkWKfXxG3ENd9u+DDqSP5dk+wiPBuqQsz540djki1CxP2AA0LxwXUC0FRl+CEq9OGEOwwYVuA2TYAuB6oiewiGYP7rFw8gUQ3DuSDphveP5BbT4VroMBjYA+19RlRMIS5zerIYqeOLh5OWKtmMVnXdLHvyH0sKJ52ZwyCKd7zuxpAaHToZtDWkyFPKmLXuHNZ2980sEDQUrjkLNk6EQ+t73UhWDbVadMRlBvJTfTVsE1i1x3WGAAhyIU9ByWfC7gk0gW1qA9CM6ot86nvfNSfbtuaPdBSVOBOem7kdtXMPCDwc5HsTG0odZQKw=
-
+    secure: p6NczH/g5GogBrnoSx8xitlMJ3zMgi5+fR3AUcxs7XodxMCJNnnJbKfSEQpiLmoJAbEXk5GO6UxsPaT1lf38UbBpjOnJDe8Pzs+gCIr0L8i4J4C2eMcvAimmj7fVqWfdCOwIWtCuqJiXig13Nzmkj9jZ/0CyHIrTt4fg/6maSjF8zQ+Nw8s6oT84vcjHjkFb/B4B1tEi7AWMSEKNR9S/2Eb8fNd9bSejzZNYMGk3A/oxjtJWLMn26rl/fZ1ZVBl2E50fDOMDb/RrF1vKipFbKQy3begZFcNOMlIzByW7XwAj5LPaDAnZoSvV9CwLZTAjgF9p8I4Zs6ccE62d3RkSOdwYU9t6AEQsuKIEdnOaFUuMV1zxrURDVyRJ1lDaMx2FCarfkmN30rP86FsYbDnK1HIs40oYfrjr5W/4J4ulcV03h9af3xMusXR4HbUkpZ5o4jeJCYinyVbyfPENo3TS96HZc4BXkW15dyCEEhiA1sWcwpicFH0z+ws/16kvJvTLe8VxW9xTlnO4Y5t7i/GeIOugUDOuX32k7JsPJhsORYUl0d3kGv/TtLkszv6MDpM2QQX/JEWObhnmdhz2jY9VTu7SNRFEGk+K5k1IOf8SFk6HT1jP9FRL1SbVruEC3Wv4djZ8urDE0fQ0NayNO4WZwQaKftUpMnP6GgH4U/B1GwU=
 before_install:
-  - sudo apt-get install gfortran
-
+- sudo apt-get install gfortran
 install:
-  - pip install -r requirements.txt
-  - pip install coverage codacy-coverage
-
+- pip install -r requirements.txt
+- pip install coverage codacy-coverage
 script:
-  - coverage run setup.py test
-  - coverage xml
-  - CODACY_PROJECT_TOKEN=$codacy_token python-codacy-coverage -r coverage.xml
+- coverage run setup.py test
+- coverage xml
+- python-codacy-coverage -r coverage.xml
+
