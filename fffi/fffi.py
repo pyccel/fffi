@@ -107,7 +107,7 @@ def arraydescr(compiler):
 ctypemap = {
             ('int', 1): 'int8_t',
             ('int', 2): 'int16_t',
-            ('int', 4): 'int', # 'int32_t'
+            ('int', 4): 'int32_t',
             ('int', 8): 'int64_t',
             ('real', 4): 'float',
             ('real', 8): 'double'
@@ -271,7 +271,7 @@ class fortran_module:
         cargs = []
         for arg in args:
             if isinstance(arg, int):
-                cargs.append(self._ffi.new('int*', arg))
+                cargs.append(self._ffi.new('int32_t*', arg))
             elif isinstance(arg, float):
                 cargs.append(self._ffi.new('double*', arg))
             elif isinstance(arg, np.ndarray):
