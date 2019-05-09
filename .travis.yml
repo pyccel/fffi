@@ -1,9 +1,6 @@
 language: python
 python:
 - '3.6'
-env:
-  global:
-    secure: ce+XhP1nKzn+thwfIXOI8wtefPwbI0xU2ZY4wE+eKZevueLKzIRt1UxklLOTn9epUbA+wpdBjhYMa4f/1maoyAXMHeGcf+J/3+eumTiN+zvIOueCC3j9vL69HNJzzkvV8qyx4OEM0CGyFREGdzDdwOMtVvK1BnANJhxzLzvPCTc1b7qi+t6f+r/Nam5qOoRmXPmeQezOW+7NFBkW92EWIXKp2+u88F/XwtBXSvaeEd7GZW5tCKXpHBWKEyj4wHMYyX8Shw72j0u3+Yn4rZE1tsId3PiL6fWqeE8LmNd+6iytBRYpv1U318NzuKIjSt1Vlm15vxlHZixA34EB84retaCyihTT93fRTPupRao4cRFo4E+dGpAmez1fjGld2GH1yccWrpmpS0eRRbR0iOM/oJGGQiD0+6ZyDcANT8thwPi/Yj6+s88q2rkZTpPbASrH9Tmba2GqfF6Jj7Z3LM9v1+UI0R5/pvoQxwtPAm74HwqLJfUjHB5s+8RYdvmwLQhpdLvfPF4aF2Yj/3FqqmmrPQR7wUNZEthNkNAa881FHeqHHYE868PT4vH0Ows9fgkWoLdWTVfMWxUm6v8bIcmpASuhWvaWfcNCfQwTjJl2y/pdEpuhOzhn7pG/oVuJQrEaGudGCuoo75R0mTD72k59a1TC5zr9ZGoQ+DJZN8q1XD0=
 before_install:
 - sudo apt-get install gfortran
 install:
@@ -12,5 +9,5 @@ install:
 script:
 - coverage run setup.py test
 - coverage xml
-- python-codacy-coverage -token $codacy_token
+- python-codacy-coverage
 
