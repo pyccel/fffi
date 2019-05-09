@@ -80,6 +80,11 @@ class Module(object):
         self.name = kwargs.pop('name')
         self.declarations = kwargs.pop('declarations', []) # optional
         self.subprograms = kwargs.pop('subprograms', []) # optional
+        
+        self.namespace = {}
+        
+        for decl in self.declarations:
+            self.namespace = {**self.namespace, **decl.namespace}
 
 class InternalSubprogram(object):
     """Class representing a Fortran internal subprogram."""

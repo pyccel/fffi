@@ -10,7 +10,7 @@ EMAIL   = 'albert@alumni.tugraz.at'
 URL     = 'https://github.com/krystophny/fffi'
 DESCR   = 'Toolkit to transparently interface Fortran from Python.'
 KEYWORDS = ['CFFI','Fortran']
-LICENSE = 'LICENSE'
+LICENSE = 'MIT'
 
 setup_args = dict(
     name                 = NAME,
