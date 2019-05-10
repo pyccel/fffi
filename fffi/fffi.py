@@ -17,7 +17,7 @@ from cffi import FFI
 from .parser import parse
 
 log_warn = True
-log_debug = True
+log_debug = False
 
 
 def arraydims(compiler):
@@ -217,7 +217,7 @@ class fortran_module:
         self.compiler = compiler
         self.methods = set()
         self.variables = set()
-        
+
         if self.path:
             self.libpath = self.path
         else:
@@ -371,7 +371,7 @@ class fortran_module:
                        libraries=[self.library],
                        library_dirs=['.'],
                        extra_compile_args=extraargs,
-                       extra_link_args=['-Wl,-rpath,'+self.libpath, 
+                       extra_link_args=['-Wl,-rpath,'+self.libpath,
                                         '-lgfortran'])
 
         debug('Compilation starting')
