@@ -30,11 +30,12 @@ packages = find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"])
 
 # Requirements from local "requirements.txt" file
 install_requires = ['cffi', 'textX']
-package_data={'': ['parser/grammar.tx']},
+package_data={'fffi': ['parser/grammar.tx']},
 
 def setup_package():
     setup(packages=packages,
           include_package_data=True,
+          package_data=package_data,
           install_requires=install_requires,
           test_suite='tests',
           **setup_args)
@@ -42,3 +43,4 @@ def setup_package():
 
 if __name__ == "__main__":
     setup_package()
+
