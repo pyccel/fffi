@@ -29,7 +29,7 @@ packages = find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"])
 # ...
 
 # Requirements from local "requirements.txt" file
-install_requires = []
+install_requires = ['cffi', 'textX']
 
 
 def setup_package():

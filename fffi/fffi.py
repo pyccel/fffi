@@ -164,12 +164,10 @@ def numpy2fortran(ffi, arr, compiler):
             arrdata.dtype = arrdata.dtype | (3 << 3)  # float: "3" TODO:others
             arrdata.dtype = arrdata.dtype | (arr.dtype.itemsize << 6)
     elif compiler['name'] == 'ifort':
-        """
-        TODO: doesn't work yet
-        see https://software.intel.com/en-us/\
-             fortran-compiler-developer-guide-and-reference-handling\
-             -fortran-array-descriptors
-        """
+        # TODO: doesn't work yet
+        # see https://software.intel.com/en-us/
+        #     fortran-compiler-developer-guide-and-reference-handling
+        #     -fortran-array-descriptors
         arrdata.elem_size = arr.dtype.itemsize
         arrdata.reserved = 0
         arrdata.info = int('10000111', 2)
@@ -219,10 +217,15 @@ class fortran_module:
         self.compiler = compiler
         self.methods = set()
         self.variables = set()
+        
+        if self.path:
+            self.libpath = self.path
+        else:
+            self.libpath = '.'
 
         if self.compiler is None:
             libstrings = subprocess.check_output(
-                ['strings', 'lib'+library+'.so']
+                ['strings', os.path.join(self.libpath, 'lib'+library+'.so')]
             )
             libstrings = libstrings.decode('utf-8').split('\n')
             for line in libstrings:
@@ -262,7 +265,7 @@ class fortran_module:
             setattr(self._lib, varname, value)
         else:
             super(fortran_module, self).__setattr__(attr, value)
-        
+
 
     def __call_fortran(self, function, *args):
         """
@@ -278,7 +281,7 @@ class fortran_module:
                 cargs.append(numpy2fortran(self._ffi, arg, self.compiler))
             else:  # TODO: add more basic types
                 raise NotImplementedError(
-                    'Argument type {} not understood.'.format())
+                    'Argument type {} not understood.'.format(type(arg)))
         if self.compiler['name'] == 'gfortran':
             funcname = '__'+self.name+'_MOD_'+function
         elif self.compiler['name'] == 'ifort':
@@ -290,7 +293,7 @@ class fortran_module:
         func = getattr(self._lib, funcname)
         debug('Calling {}({})'.format(funcname, cargs))
         func(*cargs)
-        
+
     def __get_var_fortran(self, var):
         """
         Returns a Fortran variable based on its name
@@ -330,7 +333,7 @@ class fortran_module:
             debug('Adding subprogram {}({})'.format(
                     subname, ','.join(subp.args)))
             csource += ccodegen(subp)
-        
+
         for varname, var in ast.namespace.items():
             if var.rank > 0:
                 raise NotImplementedError(
@@ -352,10 +355,8 @@ class fortran_module:
             extraargs.append('-Wno-implicit-function-declaration')
 
         if self.path:
-            libpath = self.path
             target = os.path.join(self.path, '_'+self.name+'.so')
         else:
-            libpath = '.'
             target = './_'+self.name+'.so'
 
         structdef = arraydims(self.compiler)
@@ -370,7 +371,8 @@ class fortran_module:
                        libraries=[self.library],
                        library_dirs=['.'],
                        extra_compile_args=extraargs,
-                       extra_link_args=['-Wl,-rpath,'+libpath, '-lgfortran'])
+                       extra_link_args=['-Wl,-rpath,'+self.libpath, 
+                                        '-lgfortran'])
 
         debug('Compilation starting')
         ffi.compile(tmpdir, verbose, target, debugflag)

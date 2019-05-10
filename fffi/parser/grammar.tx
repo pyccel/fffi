@@ -29,11 +29,11 @@ InternalSubprogram:
 
 // R1224, R1225
 SubProgramHeading:
-    ( (Prefix)? DeclarationType 'FUNCTION' name=ID '(' arguments*=ID[','] ')' (Suffix)? )
-  | ( (Prefix)? 'SUBROUTINE' name=ID ( '(' arguments*=ID[','] ')' )? (BindingSpec)? )
+    ( (Prefix)? DeclarationType 'FUNCTION' 
+      name=ID '(' arguments*=ID[','] ')' (Suffix)? )
+  | ( (Prefix)? 'SUBROUTINE' 
+      name=ID ( '(' arguments*=ID[','] ')' )? (BindingSpec)? )
 ;
-
-
 
 // R1228
 Prefix:
@@ -57,7 +57,8 @@ SubProgramEnding[ws='[ \t]']:
 
 // R501
 Declaration:
-   dtype=DeclarationType ((',' attributes*=DeclarationAttribute[','])? DEF)? entities*=DeclarationEntity[',']
+   dtype=DeclarationType ((',' attributes*=DeclarationAttribute[','])? DEF)? 
+       entities*=DeclarationEntity[',']
 ;
 
 // R502
@@ -93,7 +94,7 @@ DeclarationEntity: DeclarationEntityObject | DeclarationEntityFunction;
 
 // R504
 DeclarationEntityObject:
-    name=ID // TODO add the remaining attributes
+    name=ID ('(' arrayspec=ArraySpec ')')? // TODO add the remaining attributes
 ;
 
 // R504

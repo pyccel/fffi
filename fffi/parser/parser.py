@@ -133,14 +133,7 @@ class Declaration(object):
             if dtype.upper() == 'DOUBLE PRECISION':
                 dtype = 'DOUBLE'
             dtype, precision = dtype_registry[dtype.lower()]
-            # ...
-
-            # ...
-            entities = self.entities
-            names = [i.name for i in entities]
-            # ...
-
-            # ...
+            
             rank = 0
             shape = None
             attributes = []
@@ -154,18 +147,20 @@ class Declaration(object):
                     rank = len(shape)
 
                 attributes.append(key)
-            # ...
-
-#            print(dtype, attributes, names)
 
             is_allocatable = ('allocatable' in attributes)
             is_pointer     = ('pointer' in attributes)
             is_target      = ('target' in attributes)
 
-            for name in names:
+            for ent in self.entities:
+                localrank = rank
+                arrayspec = ent.arrayspec
+                if rank == 0 and (arrayspec is not None):
+                    localrank = len(arrayspec.expr['shape'])
+                    
                 var = Variable( dtype,
-                                name,
-                                rank           = rank,
+                                ent.name,
+                                rank           = localrank,
                                 allocatable    = is_allocatable,
 #                                is_stack_array = ,
                                 is_pointer     = is_pointer,
@@ -178,7 +173,7 @@ class Declaration(object):
 #                                order=,
                                 precision=precision
                               )
-                self.namespace[name] = var
+                self.namespace[ent.name] = var
 
 class DeclarationAttribute(object):
     """Class representing a Fortran declaration attribute."""
@@ -190,6 +185,7 @@ class DeclarationEntityObject(object):
     """Class representing an entity object ."""
     def __init__(self, **kwargs):
         self.name = kwargs.pop('name')
+        self.arrayspec = kwargs.pop('arrayspec')
 
 class DeclarationEntityFunction(object):
     """Class representing an entity function."""
@@ -285,27 +281,3 @@ def parse(inputs, debug=False):
 #        return list(namespace.values())[0]
     return ast
 
-####################################
-if __name__ == '__main__':
-    ast = parse('INTEGER :: x')
-    ast = parse('integer :: x')
-    ast = parse('INTEGER  x')
-    ast = parse('INTEGER, PARAMETER ::  x')
-    ast = parse('DOUBLE PRECISION :: y')
-    ast = parse('INTEGER, DIMENSION(:) :: x')
-    ast = parse('INTEGER, DIMENSION(:10) :: x')
-    ast = parse('INTEGER, DIMENSION(10:) :: x')
-    ast = parse('INTEGER, DIMENSION(10) :: x')
-    ast = parse('INTEGER, DIMENSION(10:20) :: x')
-    ast = parse('INTEGER, DIMENSION(10:20) :: x, y, z')
-    ast = parse('''
-                subroutine test(x, y)
-                  integer, dimension(:), intent(out) :: x
-                  integer :: y
-                end
-
-                SUBROUTINE tes
-                  integer, intent(out) :: a
-                  integer :: b
-                end
-                ''')
