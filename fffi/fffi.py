@@ -227,8 +227,9 @@ class fortran_library:
             for line in libstrings:
                 if line.startswith('GCC:'):
                     debug(line)
-                    major = int(line.split(' ')[-1].split('.')[0])
+                    major = int(line.split(')')[-1].split('.')[0])
                     self.compiler = {'name': 'gfortran', 'version': major}
+                    debug(self.compiler)
                     break
                 
 
