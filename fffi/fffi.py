@@ -205,19 +205,15 @@ def debug(output):
     print('DEBUG {}:{} {}():'.format(filename, line_number, function_name))
     print(output)
 
-
-class fortran_module:
-    def __init__(self, library, name, maxdim=7, path=None, compiler=None):
-        self.library = library
+class fortran_library:
+    def __init__(self, name, maxdim=7, path=None, compiler=None):
         self.name = name
         self.maxdim = maxdim  # maximum dimension of arrays
         self.csource = ''
         self.loaded = False
-        self.path = path
         self.compiler = compiler
-        self.methods = set()
-        self.variables = set()
-
+        self.path = path
+        
         if self.path:
             self.libpath = self.path
         else:
@@ -225,124 +221,22 @@ class fortran_module:
 
         if self.compiler is None:
             libstrings = subprocess.check_output(
-                ['strings', os.path.join(self.libpath, 'lib'+library+'.so')]
+                ['strings', os.path.join(self.libpath, 'lib'+name+'.so')]
             )
             libstrings = libstrings.decode('utf-8').split('\n')
             for line in libstrings:
-                if line.startswith('GCC'):
+                if line.startswith('GCC:'):
+                    debug(line)
                     major = int(line.split(' ')[-1].split('.')[0])
                     self.compiler = {'name': 'gfortran', 'version': major}
                     break
+                
 
         # Manual path specification is required for tests via `setup.py test`
         # which would not find the extension module otherwise
         if self.path not in sys.path:
             sys.path.append(self.path)
-
-    def __dir__(self):
-        return sorted(self.methods | self.variables)
-
-    def __getattr__(self, attr):
-        if ('methods' in self.__dict__)  and (attr in self.methods):
-            def method(*args): return self.__call_fortran(attr, *args)
-            return method
-        if ('variables' in self.__dict__) and (attr in self.variables):
-            return self.__get_var_fortran(attr)
-        else:
-            raise AttributeError('''Fortran module \'{}\' has no attribute
-                                    \'{}\'.'''.format(self.name, attr))
-
-    def __setattr__(self, attr, value):
-        if ('variables' in self.__dict__) and (attr in self.variables):
-            if self.compiler['name'] == 'gfortran':
-                varname = '__'+self.name+'_MOD_'+attr
-            elif self.compiler['name'] == 'ifort':
-                varname = self.name+'_mp_'+attr+'_'
-            else:
-                raise NotImplementedError(
-                    '''Compiler {} not supported. Use gfortran or ifort
-                    '''.format(self.compiler))
-            setattr(self._lib, varname, value)
-        else:
-            super(fortran_module, self).__setattr__(attr, value)
-
-
-    def __call_fortran(self, function, *args):
-        """
-        Calls a Fortran module routine based on its name
-        """
-        cargs = []
-        for arg in args:
-            if isinstance(arg, int):
-                cargs.append(self._ffi.new('int32_t*', arg))
-            elif isinstance(arg, float):
-                cargs.append(self._ffi.new('double*', arg))
-            elif isinstance(arg, np.ndarray):
-                cargs.append(numpy2fortran(self._ffi, arg, self.compiler))
-            else:  # TODO: add more basic types
-                raise NotImplementedError(
-                    'Argument type {} not understood.'.format(type(arg)))
-        if self.compiler['name'] == 'gfortran':
-            funcname = '__'+self.name+'_MOD_'+function
-        elif self.compiler['name'] == 'ifort':
-            funcname = self.name+'_mp_'+function+'_'
-        else:
-            raise NotImplementedError(
-                '''Compiler {} not supported. Use gfortran or ifort
-                '''.format(self.compiler))
-        func = getattr(self._lib, funcname)
-        debug('Calling {}({})'.format(funcname, cargs))
-        func(*cargs)
-
-    def __get_var_fortran(self, var):
-        """
-        Returns a Fortran variable based on its name
-        """
-        if self.compiler['name'] == 'gfortran':
-            varname = '__'+self.name+'_MOD_'+var
-        elif self.compiler['name'] == 'ifort':
-            varname = self.name+'_mp_'+var+'_'
-        else:
-            raise NotImplementedError(
-                '''Compiler {} not supported. Use gfortran or ifort
-                '''.format(self.compiler))
-        return getattr(self._lib, varname)
-
-    def cdef(self, csource):  # TODO: replace this by implementing fdef
-        """
-        Specifies C source with some template replacements:
-        {mod} -> compiler module prefix, e.g. for self.name == testmod for GCC:
-          void {mod}_func() -> void __testmod_MOD_func()
-        """
-        # GNU specific
-        if self.compiler['name'] == 'gfortran':
-            self.csource += csource.format(mod='__'+self.name+'_MOD')
-        elif self.compiler['name'] == 'ifort':
-            self.csource += csource.format(mod=self.name+'_mp')
-        else:
-            raise NotImplementedError(
-                '''Compiler {} not supported. Use gfortran or ifort
-                '''.format(self.compiler))
-        debug('C signatures are\n' + self.csource)
-
-    def fdef(self, fsource):
-        ast = parse(fsource)
-
-        csource = ''
-        for subname, subp in ast.subprograms.items():
-            debug('Adding subprogram {}({})'.format(
-                    subname, ','.join(subp.args)))
-            csource += ccodegen(subp)
-
-        for varname, var in ast.namespace.items():
-            if var.rank > 0:
-                raise NotImplementedError(
-                    '''Non-scalar module variables not yet supported''')
-            ctype = ctypemap[(var.dtype, var.precision)]
-            debug('Adding variable {} ({})'.format(varname, ctype))
-            csource += 'extern {} {{mod}}_{};\n'.format(ctype, varname)
-
-        self.cdef(csource)
+    
 
     def compile(self, tmpdir='.', verbose=0, debugflag=None):
         """
@@ -368,8 +262,8 @@ class fortran_module:
 
         ffi.set_source('_'+self.name,
                        structdef+self.csource,
-                       libraries=[self.library],
-                       library_dirs=['.'],
+                       libraries=[self.name],
+                       library_dirs=['.', self.libpath],
                        extra_compile_args=extraargs,
                        extra_link_args=['-Wl,-rpath,'+self.libpath,
                                         '-lgfortran'])
@@ -386,25 +280,152 @@ class fortran_module:
             # TODO: add a check if the extension module itself is loaded.
             # Otherwise a new instance of a fortran_module makes you think
             # you can reload the extension module without warning.
-            warn('Module cannot be re-/unloaded unless Python is restarted.')
+            warn('Library cannot be re-/unloaded unless Python is restarted.')
 
         self._mod = importlib.import_module('_'+self.name)
         self._ffi = self._mod.ffi
         self._lib = self._mod.lib
+        self.loaded = True
+        
+
+class fortran_module:
+    def __init__(self, library, name, maxdim=7, path=None, compiler=None):
+        if isinstance(library, str):
+            self.library = fortran_library(library, path, maxdim, compiler=None)
+        else:
+            self.library = library
+        self.name = name
         self.methods = set()
-        ext_methods = dir(self._lib)
-        for m in ext_methods:
-            if self.compiler['name'] == 'gfortran':
-                mname = re.sub('__.+_MOD_', '', m)  # GNU specific
-            elif self.compiler['name'] == 'ifort':
-                mname = re.sub('__.+_mt_', '', m)
+        self.variables = set()
+        self.csource = ''
+        self.loaded = False
+
+    def __dir__(self):
+        return sorted(self.methods | self.variables)
+
+    def __getattr__(self, attr):
+        if ('methods' in self.__dict__)  and (attr in self.methods):
+            def method(*args): return self.__call_fortran(attr, *args)
+            return method
+        if ('variables' in self.__dict__) and (attr in self.variables):
+            return self.__get_var_fortran(attr)
+        else:
+            raise AttributeError('''Fortran module \'{}\' has no attribute
+                                    \'{}\'.'''.format(self.name, attr))
+
+    def __setattr__(self, attr, value):
+        if ('variables' in self.__dict__) and (attr in self.variables):
+            if self.library.compiler['name'] == 'gfortran':
+                varname = '__'+self.name+'_MOD_'+attr
+            elif self.library.compiler['name'] == 'ifort':
+                varname = self.name+'_mp_'+attr+'_'
             else:
                 raise NotImplementedError(
                     '''Compiler {} not supported. Use gfortran or ifort
                     '''.format(self.compiler))
-            attr = getattr(self._lib, m)
+            setattr(self.library._lib, varname, value)
+        else:
+            super(fortran_module, self).__setattr__(attr, value)
+
+
+    def __call_fortran(self, function, *args):
+        """
+        Calls a Fortran module routine based on its name
+        """
+        cargs = []
+        for arg in args:
+            if isinstance(arg, int):
+                cargs.append(self.library._ffi.new('int32_t*', arg))
+            elif isinstance(arg, float):
+                cargs.append(self.library._ffi.new('double*', arg))
+            elif isinstance(arg, np.ndarray):
+                cargs.append(numpy2fortran(self.library._ffi, arg, 
+                                           self.library.compiler))
+            else:  # TODO: add more basic types
+                raise NotImplementedError(
+                    'Argument type {} not understood.'.format(type(arg)))
+        if self.library.compiler['name'] == 'gfortran':
+            funcname = '__'+self.name+'_MOD_'+function
+        elif self.library.compiler['name'] == 'ifort':
+            funcname = self.name+'_mp_'+function+'_'
+        else:
+            raise NotImplementedError(
+                '''Compiler {} not supported. Use gfortran or ifort
+                '''.format(self.library.compiler))
+        func = getattr(self.library._lib, funcname)
+        debug('Calling {}({})'.format(funcname, cargs))
+        func(*cargs)
+
+    def __get_var_fortran(self, var):
+        """
+        Returns a Fortran variable based on its name
+        """
+        if self.library.compiler['name'] == 'gfortran':
+            varname = '__'+self.name+'_MOD_'+var
+        elif self.library.compiler['name'] == 'ifort':
+            varname = self.name+'_mp_'+var+'_'
+        else:
+            raise NotImplementedError(
+                '''Compiler {} not supported. Use gfortran or ifort
+                '''.format(self.library.compiler))
+        return getattr(self.library._lib, varname)
+
+    def cdef(self, csource):  # TODO: replace this by implementing fdef
+        """
+        Specifies C source with some template replacements:
+        {mod} -> compiler module prefix, e.g. for self.name == testmod for GCC:
+          void {mod}_func() -> void __testmod_MOD_func()
+        """
+        # GNU specific
+        if self.library.compiler['name'] == 'gfortran':
+            self.csource += csource.format(mod='__'+self.name+'_MOD')
+        elif self.library.compiler['name'] == 'ifort':
+            self.csource += csource.format(mod=self.name+'_mp')
+        else:
+            raise NotImplementedError(
+                '''Compiler {} not supported. Use gfortran or ifort
+                '''.format(self.library.compiler))
+        debug('C signatures are\n' + self.csource)
+        self.library.csource = self.library.csource + self.csource
+
+    def fdef(self, fsource):
+        ast = parse(fsource)
+
+        csource = ''
+        for subname, subp in ast.subprograms.items():
+            debug('Adding subprogram {}({})'.format(
+                    subname, ','.join(subp.args)))
+            csource += ccodegen(subp)
+
+        for varname, var in ast.namespace.items():
+            if var.rank > 0:
+                raise NotImplementedError(
+                    '''Non-scalar module variables not yet supported''')
+            ctype = ctypemap[(var.dtype, var.precision)]
+            debug('Adding variable {} ({})'.format(varname, ctype))
+            csource += 'extern {} {{mod}}_{};\n'.format(ctype, varname)
+
+        self.cdef(csource)
+    
+    def load(self):
+        if not self.library.loaded:
+            self.library.load()
+        self.methods = set()
+        ext_methods = dir(self.library._lib)
+        for m in ext_methods:
+            if self.library.compiler['name'] == 'gfortran':
+                mod_sym = '__{}_MOD_'.format(self.name)
+            elif self.library.compiler['name'] == 'ifort':
+                mod_sym = '__{}_mt_'.format(self.name)
+            else:
+                raise NotImplementedError(
+                    '''Compiler {} not supported. Use gfortran or ifort
+                    '''.format(self.compiler))
+            if not mod_sym in m: 
+                continue
+            mname = re.sub(mod_sym, '', m)
+            attr = getattr(self.library._lib, m)
             if callable(attr):
                 self.methods.add(mname)
             else:
                 self.variables.add(mname)
-        self.loaded = True

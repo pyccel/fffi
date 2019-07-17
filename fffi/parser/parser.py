@@ -80,9 +80,9 @@ class Module(object):
         self.name = kwargs.pop('name')
         self.declarations = kwargs.pop('declarations', []) # optional
         self.subprograms = kwargs.pop('subprograms', []) # optional
-        
+
         self.namespace = {}
-        
+
         for decl in self.declarations:
             self.namespace = {**self.namespace, **decl.namespace}
 
@@ -133,7 +133,7 @@ class Declaration(object):
             if dtype.upper() == 'DOUBLE PRECISION':
                 dtype = 'DOUBLE'
             dtype, precision = dtype_registry[dtype.lower()]
-            
+
             rank = 0
             shape = None
             attributes = []
@@ -157,7 +157,7 @@ class Declaration(object):
                 arrayspec = ent.arrayspec
                 if rank == 0 and (arrayspec is not None):
                     localrank = len(arrayspec.expr['shape'])
-                    
+
                 var = Variable( dtype,
                                 ent.name,
                                 rank           = localrank,

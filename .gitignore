@@ -8,4 +8,5 @@ _*.c
 *.mod
 *.pyc
 coverage.xml
+.eggs
 
