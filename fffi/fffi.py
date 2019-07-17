@@ -291,7 +291,7 @@ class fortran_library:
 class fortran_module:
     def __init__(self, library, name, maxdim=7, path=None, compiler=None):
         if isinstance(library, str):
-            self.library = fortran_library(library, path, maxdim, compiler=None)
+            self.library = fortran_library(library, maxdim, path, compiler=None)
         else:
             self.library = library
         self.name = name
@@ -429,3 +429,6 @@ class fortran_module:
                 self.methods.add(mname)
             else:
                 self.variables.add(mname)
+
+    def compile(self, tmpdir='.', verbose=0, debugflag=None):
+        self.library.compile(tmpdir, verbose, debugflag)
