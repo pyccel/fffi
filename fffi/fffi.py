@@ -341,6 +341,7 @@ class fortran_module:
         """
         # TODO: scalars should be able to be either mutable 0d numpy arrays
         # for in/out, or immutable Python types for pure input
+        # TODO: should be able to cast variables e.g. int/float if needed
         cargs = []
         for arg in args:
             if isinstance(arg, int):
@@ -384,7 +385,7 @@ class fortran_module:
         
         return var
 
-    def cdef(self, csource):  # TODO: replace this by implementing fdef
+    def cdef(self, csource):
         """
         Specifies C source with some template replacements:
         {mod} -> compiler module prefix, e.g. for self.name == testmod for GCC:
