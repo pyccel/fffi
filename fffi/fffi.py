@@ -183,6 +183,12 @@ def numpy2fortran(ffi, arr, compiler):
 
     return arrdata
 
+def fortran2numpy(ffi, data):
+    # See https://gist.github.com/yig/77667e676163bbfc6c44af02657618a6
+    # TODO: add support for more types than real(8) and also assumed size
+    ptr = ffi.addressof(data)
+    return np.frombuffer(ffi.buffer(ptr, 8*len(data)), 'f8' )
+
 
 def warn(output):
     caller_frame = inspect.currentframe().f_back
@@ -333,6 +339,8 @@ class fortran_module:
         """
         Calls a Fortran module routine based on its name
         """
+        # TODO: scalars should be able to be either mutable 0d numpy arrays
+        # for in/out, or immutable Python types for pure input
         cargs = []
         for arg in args:
             if isinstance(arg, int):
@@ -369,7 +377,12 @@ class fortran_module:
             raise NotImplementedError(
                 '''Compiler {} not supported. Use gfortran or ifort
                 '''.format(self.library.compiler))
-        return getattr(self.library._lib, varname)
+        var = getattr(self.library._lib, varname)
+        
+        if isinstance(var, self.library._ffi.CData):  # array
+            return fortran2numpy(self.library._ffi, var)
+        
+        return var
 
     def cdef(self, csource):  # TODO: replace this by implementing fdef
         """
@@ -399,12 +412,21 @@ class fortran_module:
             csource += ccodegen(subp)
 
         for varname, var in ast.namespace.items():
-            if var.rank > 0:
-                raise NotImplementedError(
-                    '''Non-scalar module variables not yet supported''')
             ctype = ctypemap[(var.dtype, var.precision)]
-            debug('Adding variable {} ({})'.format(varname, ctype))
-            csource += 'extern {} {{mod}}_{};\n'.format(ctype, varname)
+            
+            # TODO: add support for assumed size and/or allocatable arrays
+            # csource += 'extern struct array_{}d {{mod}}_{};\n'.format(var.rank, varname)
+            if var.rank == 1:
+                debug('Adding rank {} array {} ({})'.format(var.rank, varname, ctype))
+                length = var.shape[0][1]
+                csource += 'extern {} {{mod}}_{}[{}];\n'.format(ctype, varname, length)
+            elif var.rank > 1:
+                raise NotImplementedError(
+                '''Arrays with rank > 1 not yet supported 
+                   as module variables''')
+            else:
+                debug('Adding scalar {} ({})'.format(varname, ctype))
+                csource += 'extern {} {{mod}}_{};\n'.format(ctype, varname)
 
         self.cdef(csource)
     
@@ -426,9 +448,13 @@ class fortran_module:
                 continue
             mname = re.sub(mod_sym, '', m)
             attr = getattr(self.library._lib, m)
-            if callable(attr):
+            debug('Name: {}, Type: {}, Callable: {}'.format(
+                    mname, type(attr), callable(attr)))
+            if isinstance(attr, self.library._ffi.CData):  # array variable
+                self.variables.add(mname)
+            elif callable(attr):  # subroutine or function
                 self.methods.add(mname)
-            else:
+            else:  # scalar variable
                 self.variables.add(mname)
 
     def compile(self, tmpdir='.', verbose=0, debugflag=None):
