@@ -1,4 +1,4 @@
-![Travis Badge](https://api.travis-ci.com/krystophny/fffi.svg?branch=master)
+[![Travis Badge](https://api.travis-ci.com/krystophny/fffi.svg?branch=master)](https://travis-ci.org/pyccel/fffi)
 [![Codacy Badge](https://api.codacy.com/project/badge/Coverage/1f01028dd9db4231b24eab75934a2231)](https://www.codacy.com/app/krystophny/fffi?utm_source=github.com&utm_medium=referral&utm_content=krystophny/fffi&utm_campaign=Badge_Coverage)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/1f01028dd9db4231b24eab75934a2231)](https://www.codacy.com/app/krystophny/fffi?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=krystophny/fffi&amp;utm_campaign=Badge_Grade)
 
