@@ -3,10 +3,10 @@ module class_Circle
   private
   public :: Circle, circle_area, circle_print
 
-  real :: pi = 3.1415926535897931d0 ! Class-wide private constant
+  real(8) :: pi = 3.1415926535897931d0 ! Class-wide private constant
 
   type Circle
-     real :: radius
+     real(8) :: radius
   end type Circle
 contains
   function circle_area(this) result(area)
@@ -17,7 +17,7 @@ contains
 
   subroutine circle_print(this)
     type(Circle), intent(in) :: this
-    real :: area
+    real(8) :: area
     area = circle_area(this)  ! Call the circle_area function
     print *, 'Circle: r = ', this%radius, ' area = ', area
   end subroutine circle_print

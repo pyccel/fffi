@@ -6,6 +6,7 @@ Statement:
     Module
   | InternalSubprogram
   | Declaration
+  | DerivedTypeDefinition
 ;
 
 // R1104
@@ -55,7 +56,7 @@ SubProgramEnding[ws='[ \t]']:
     | ( 'END' ('SUBROUTINE' | 'FUNCTION') )
 ;
 
-// R501
+// R207, R501
 Declaration:
    dtype=DeclarationType ((',' attributes*=DeclarationAttribute[','])? DEF)? 
        entities*=DeclarationEntity[',']
@@ -64,8 +65,8 @@ Declaration:
 // R502
 DeclarationType:
       kind=IntrinsicType 
-    | kind='TYPE'  //(DerivedType)? // TODO
-    | kind='CLASS' //(DerivedType | STAR)? // TODO
+//    | kind='TYPE'  //(DerivedType)? // TODO
+//    | kind='CLASS' //(DerivedType | STAR)? // TODO
 ;
 
 // R503
@@ -136,6 +137,13 @@ IntrinsicType:
     | 'DOUBLE COMPLEX' // TODO allowing for white spaces 
     | 'LOGICAL' 
     | 'CHARACTER' 
+;
+
+// R429
+DerivedTypeDefinition:
+    'TYPE' (DEF)? name=ID
+      declarations*=Declaration
+    'END TYPE'
 ;
 
 DEF:         "::";

@@ -63,6 +63,7 @@ class Fortran(object):
         self.modules = {}
         self.subprograms = {}
         self.namespace = {}
+        self.types = {} 
 
         for stmt in self.statements:
             if isinstance(stmt, Module):
@@ -71,6 +72,8 @@ class Fortran(object):
                 self.subprograms[stmt.name] = stmt
             elif isinstance(stmt, Declaration):
                 self.namespace = {**self.namespace, **stmt.namespace}
+            elif isinstance(stmt, DerivedTypeDefinition):
+                self.types[stmt.name] = stmt
             else:
                 raise NotImplementedError('TODO {}'.format(type(stmt)))
 
@@ -224,6 +227,11 @@ class ArrayExplicitShapeSpec(object):
         self.upper_bound = kwargs.pop('upper_bound', None)
         self.lower_bound = kwargs.pop('lower_bound', 1)
 
+class DerivedTypeDefinition(object):
+    def __init__(self, **kwargs):
+        self.name = kwargs.pop('name')
+        self.declarations = kwargs.pop('declarations', [])
+
 #==============================================================================
 
 #==============================================================================
@@ -261,7 +269,8 @@ def parse(inputs, debug=False):
                DeclarationEntityObject,
                DeclarationEntityFunction,
                ArraySpec,
-               ArrayExplicitShapeSpec]
+               ArrayExplicitShapeSpec,
+               DerivedTypeDefinition]
 
     meta = metamodel_from_file(grammar, debug=debug, classes=classes, ignore_case=True)
 

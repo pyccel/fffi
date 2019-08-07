@@ -156,6 +156,7 @@ def numpy2fortran(ffi, arr, compiler):
         if compiler['version'] >= 8:
             arrdata.span = np.size(arr)*arr.dtype.itemsize
             arrdata.dtype.len = arr.dtype.itemsize
+            arrdata.dtype.ver = 0
             arrdata.dtype.rank = ndims
             arrdata.dtype.type = 3  # "3" for float, TODO:others
             arrdata.dtype.attribute = 0
