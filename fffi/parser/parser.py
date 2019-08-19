@@ -52,7 +52,7 @@ dtype_registry = {  'real':('real',8),
                     'int64':('int',8),
                     'int'  :('int',4),
                     'integer':('int',4),
-                    'bool' :('bool',1)}
+                    'logical' :('int',1)}
 
 #==============================================================================
 
@@ -135,7 +135,12 @@ class Declaration(object):
             dtype = self.dtype.kind
             if dtype.upper() == 'DOUBLE PRECISION':
                 dtype = 'DOUBLE'
-            dtype, precision = dtype_registry[dtype.lower()]
+    
+            if dtype.upper() == 'TYPE':
+                dtype = 'type ' + self.dtype.name
+                precision = None
+            else:
+                dtype, precision = dtype_registry[dtype.lower()]
 
             rank = 0
             shape = None

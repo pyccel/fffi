@@ -113,19 +113,20 @@ ctypemap = {
             ('real', 8): 'double'
         }
 
-
 def ccodegen(subprogram):
     cargs = []
     for arg in subprogram.args:
+        # TODO: add handling of fixed size array arguments
         attrs = subprogram.namespace[arg]
         dtype = attrs.dtype
         rank = attrs.rank
         precision = attrs.precision
         debug('{} rank={} bytes={}'.format(dtype, rank, precision))
 
-        ctypename = None
-
-        if rank == 0:
+        if dtype.startswith('type'): 
+            typename = dtype.split(' ')[1]
+            ctypename = 'struct {}'.format(typename)
+        elif rank == 0:
             ctypename = ctypemap[(dtype, precision)]
         else:
             ctypename = 'array_{}d'.format(rank)
@@ -138,6 +139,37 @@ def ccodegen(subprogram):
     csource = 'extern void {{mod}}_{}({});\n'.format(
         subprogram.name, ','.join(cargs))
     return csource
+
+def c_declaration(var):
+    # TODO: add support for derived types also here
+    ctype = ctypemap[(var.dtype, var.precision)]
+    
+    # Scalars
+    if var.rank == 0:
+        debug('Adding scalar {} ({})'.format(var.name, ctype))
+        return ctype, var.name
+    
+    if not(var.shape):
+        # TODO: add support for assumed size and/or allocatable arrays
+        # csource += 'extern struct array_{}d {{mod}}_{};\n'.format(var.rank, varname)
+        raise NotImplementedError('''
+            Declaration of assumed size and/or allocatable arrays
+            not yet supported.
+            ''')
+    
+    # Fixed size arrays
+    
+    if var.rank == 1:
+        debug('Adding rank {} array {} ({})'.format(var.rank, var.name, ctype))
+        length = var.shape[0][1]
+        return ctype, '{}[{}]'.format(var.name, length)
+    elif var.rank > 1:
+        raise NotImplementedError(
+        '''Fixed size arrays with rank > 1 not yet supported 
+           as module variables''')
+    else:
+        ctype = 'array_{}d'.format(var.rank)
+        return (ctype + '*'), var.name
 
 
 def numpy2fortran(ffi, arr, compiler):
@@ -232,7 +264,7 @@ class fortran_library:
             )
             libstrings = libstrings.decode('utf-8').split('\n')
             for line in libstrings:
-                if line.startswith('GCC:'):
+                if line.startswith('GCC:') or line.startswith('@GCC:'):
                     debug(line)
                     major = int(line.split(')')[-1].split('.')[0])
                     self.compiler = {'name': 'gfortran', 'version': major}
@@ -353,8 +385,7 @@ class fortran_module:
                 cargs.append(numpy2fortran(self.library._ffi, arg, 
                                            self.library.compiler))
             else:  # TODO: add more basic types
-                raise NotImplementedError(
-                    'Argument type {} not understood.'.format(type(arg)))
+                cargs.append(arg)
         if self.library.compiler['name'] == 'gfortran':
             funcname = '__'+self.name+'_MOD_'+function
         elif self.library.compiler['name'] == 'ifort':
@@ -403,32 +434,30 @@ class fortran_module:
                 '''.format(self.library.compiler))
         debug('C signatures are\n' + self.csource)
         self.library.csource = self.library.csource + self.csource
+        
 
     def fdef(self, fsource):
         ast = parse(fsource)
 
         csource = ''
+        for typename, typedef in ast.types.items():
+            debug('Adding type {}'.format(typename))
+            csource += 'struct {} {{{{\n'.format(typename)
+            for decl in typedef.declarations:
+                for varname, var in decl.namespace.items():
+                    ctype, cdecl = c_declaration(var)
+                    debug('{} {}'.format(ctype, cdecl))
+                    csource += '{} {};\n'.format(ctype, cdecl)
+            csource += '}};\n'
+           # csource += ccodegen(subp)
         for subname, subp in ast.subprograms.items():
             debug('Adding subprogram {}({})'.format(
                     subname, ','.join(subp.args)))
             csource += ccodegen(subp)
 
         for varname, var in ast.namespace.items():
-            ctype = ctypemap[(var.dtype, var.precision)]
-            
-            # TODO: add support for assumed size and/or allocatable arrays
-            # csource += 'extern struct array_{}d {{mod}}_{};\n'.format(var.rank, varname)
-            if var.rank == 1:
-                debug('Adding rank {} array {} ({})'.format(var.rank, varname, ctype))
-                length = var.shape[0][1]
-                csource += 'extern {} {{mod}}_{}[{}];\n'.format(ctype, varname, length)
-            elif var.rank > 1:
-                raise NotImplementedError(
-                '''Arrays with rank > 1 not yet supported 
-                   as module variables''')
-            else:
-                debug('Adding scalar {} ({})'.format(varname, ctype))
-                csource += 'extern {} {{mod}}_{};\n'.format(ctype, varname)
+            ctype, cdecl = c_declaration(var)
+            csource += 'extern {} {{mod}}_{};\n'.format(ctype, cdecl)
 
         self.cdef(csource)
     
@@ -461,3 +490,6 @@ class fortran_module:
 
     def compile(self, tmpdir='.', verbose=0, debugflag=None):
         self.library.compile(tmpdir, verbose, debugflag)
+        
+    def new(self, typename):
+        return self.library._ffi.new('struct {} *'.format(typename))

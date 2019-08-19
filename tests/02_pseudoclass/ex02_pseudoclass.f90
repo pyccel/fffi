@@ -9,17 +9,17 @@ module class_Circle
      real(8) :: radius
   end type Circle
 contains
-  function circle_area(this) result(area)
-    type(Circle), intent(in) :: this
-    real :: area
-    area = pi * this%radius**2
+  function circle_area(self) result(area)
+    type(Circle), intent(in) :: self
+    real(8) :: area
+    area = pi * self%radius**2
   end function circle_area
 
-  subroutine circle_print(this)
-    type(Circle), intent(in) :: this
+  subroutine circle_print(self)
+    type(Circle), intent(in) :: self
     real(8) :: area
-    area = circle_area(this)  ! Call the circle_area function
-    print *, 'Circle: r = ', this%radius, ' area = ', area
+    area = circle_area(self)  ! Call the circle_area function
+    print *, 'Circle: r = ', self%radius, ' area = ', area
   end subroutine circle_print
 end module class_Circle
 

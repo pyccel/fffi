@@ -65,7 +65,7 @@ Declaration:
 // R502
 DeclarationType:
       kind=IntrinsicType 
-//    | kind='TYPE'  //(DerivedType)? // TODO
+    | kind='TYPE' '(' name=ID ')'
 //    | kind='CLASS' //(DerivedType | STAR)? // TODO
 ;
 
