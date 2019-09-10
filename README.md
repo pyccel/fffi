@@ -61,12 +61,13 @@ Current status:
 * Code generation and invocation is transparent by encapsulation in Python class
 * CFFI API mode is used (pre-generate C extension module as a wrapper)
 * Subroutine signature definition in Fortran via `fdef` like CFFI `cdef`
-* Array descriptor structs are working with gfortran 5, 6, 7, 8, 9
+* Array descriptor structs are working with gfortran 5, 6, 7, 8, 9 and Intel Fortran 18
 
 Next steps:
 
 * Add flexibility with regard to types, floating-point precision, etc.
+* More testing, in particular with Intel compiler
 * Test numpy.array views on existing data and memory management behavior
 * Allow for ABI mode in addition to API mode, and static library API mode
-* Add support for Intel and PGI in addition to GNU Fortran compiler
+* Add support and PGI compiler
 * Test in real world applications
