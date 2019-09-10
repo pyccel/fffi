@@ -53,8 +53,8 @@ def arraydims(compiler):
             return """
               typedef struct array_dims array_dims;
               struct array_dims {
-                uintptr_t upper_bound;
-                uintptr_t stride;
+                uintptr_t extent;
+                uintptr_t distance;
                 uintptr_t lower_bound;
               };
             """
@@ -91,7 +91,7 @@ def arraydescr(compiler):
               typedef struct array_{0}d array_{0}d;
               struct array_{0}d {{
                 void *base_addr;
-                uintptr_t elem_size;
+                size_t elem_size;
                 uintptr_t reserved;
                 uintptr_t info;
                 uintptr_t rank;
@@ -196,23 +196,26 @@ def numpy2fortran(ffi, arr, compiler):
             arrdata.dtype = ndims  # rank of the array
             arrdata.dtype = arrdata.dtype | (3 << 3)  # float: "3" TODO:others
             arrdata.dtype = arrdata.dtype | (arr.dtype.itemsize << 6)
+        
+        stride = 1
+        for kd in range(ndims):
+            arrdata.dim[kd].stride = stride
+            arrdata.dim[kd].lower_bound = 1
+            arrdata.dim[kd].upper_bound = arr.shape[kd]
+            stride = stride*arr.shape[kd]
     elif compiler['name'] == 'ifort':
-        # TODO: doesn't work yet
-        # see https://software.intel.com/en-us/
-        #     fortran-compiler-developer-guide-and-reference-handling
-        #     -fortran-array-descriptors
         arrdata.elem_size = arr.dtype.itemsize
         arrdata.reserved = 0
-        arrdata.info = int('10000111', 2)
+        arrdata.info = int('100001110', 2)
         arrdata.rank = ndims
         arrdata.reserved2 = 0
+        distance = arr.dtype.itemsize
+        for kd in range(ndims):
+            arrdata.dim[kd].distance = distance
+            arrdata.dim[kd].lower_bound = 1
+            arrdata.dim[kd].extent = arr.shape[kd]
+            distance = distance*arr.shape[kd]
 
-    stride = 1
-    for kd in range(ndims):
-        arrdata.dim[kd].stride = stride
-        arrdata.dim[kd].lower_bound = 1
-        arrdata.dim[kd].upper_bound = arr.shape[kd]
-        stride = stride*arr.shape[kd]
 
     return arrdata
 
