@@ -136,7 +136,7 @@ def ccodegen(subprogram):
 
         cargs.append('{} *{}'.format(ctypename, arg))
 
-    csource = 'extern void {{mod}}_{}({});\n'.format(
+    csource = 'extern void {{mod}}_{}{{suffix}}({});\n'.format(
         subprogram.name, ','.join(cargs))
     return csource
 
@@ -425,9 +425,11 @@ class fortran_module:
         """
         # GNU specific
         if self.library.compiler['name'] == 'gfortran':
-            self.csource += csource.format(mod='__'+self.name+'_MOD')
+            self.csource += csource.format(mod='__'+self.name+'_MOD',
+                                           suffix='')
         elif self.library.compiler['name'] == 'ifort':
-            self.csource += csource.format(mod=self.name+'_mp')
+            self.csource += csource.format(mod=self.name+'_mp',
+                                           suffix='_')
         else:
             raise NotImplementedError(
                 '''Compiler {} not supported. Use gfortran or ifort
@@ -457,7 +459,7 @@ class fortran_module:
 
         for varname, var in ast.namespace.items():
             ctype, cdecl = c_declaration(var)
-            csource += 'extern {} {{mod}}_{};\n'.format(ctype, cdecl)
+            csource += 'extern {} {{mod}}_{}{{suffix}};\n'.format(ctype, cdecl)
 
         self.cdef(csource)
     
@@ -470,7 +472,7 @@ class fortran_module:
             if self.library.compiler['name'] == 'gfortran':
                 mod_sym = '__{}_MOD_'.format(self.name)
             elif self.library.compiler['name'] == 'ifort':
-                mod_sym = '__{}_mt_'.format(self.name)
+                mod_sym = '{}_mp_'.format(self.name)
             else:
                 raise NotImplementedError(
                     '''Compiler {} not supported. Use gfortran or ifort
@@ -478,6 +480,8 @@ class fortran_module:
             if not mod_sym in m: 
                 continue
             mname = re.sub(mod_sym, '', m)
+            if self.library.compiler['name'] == 'ifort':
+                mname = mname.strip('_')
             attr = getattr(self.library._lib, m)
             debug('Name: {}, Type: {}, Callable: {}'.format(
                     mname, type(attr), callable(attr)))
