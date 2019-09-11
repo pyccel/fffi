@@ -19,6 +19,13 @@ from .parser import parse
 log_warn = True
 log_debug = False
 
+if 'linux' in sys.platform:
+    libext = '.so'
+elif 'darwin' in sys.platform:
+    libext = '.so'
+elif 'win' in sys.platform:
+    libext = '.dll'
+
 
 def arraydims(compiler):
     if compiler['name'] == 'gfortran':
@@ -263,7 +270,7 @@ class fortran_library:
 
         if self.compiler is None:
             libstrings = subprocess.check_output(
-                ['strings', os.path.join(self.libpath, 'lib'+name+'.so')]
+                ['strings', os.path.join(self.libpath, 'lib'+name+libext)]
             )
             libstrings = libstrings.decode('utf-8').split('\n')
             for line in libstrings:
@@ -273,6 +280,9 @@ class fortran_library:
                     self.compiler = {'name': 'gfortran', 'version': major}
                     debug(self.compiler)
                     break
+            
+        if self.compiler is None:  # fallback to recent gfortran
+            self.compiler={'name':'gfortran', 'version': 9}
                 
 
         # Manual path specification is required for tests via `setup.py test`
@@ -292,9 +302,9 @@ class fortran_library:
             extraargs.append('-Wno-implicit-function-declaration')
 
         if self.path:
-            target = os.path.join(self.path, '_'+self.name+'.so')
+            target = os.path.join(self.path, '_'+self.name+libext)
         else:
-            target = './_'+self.name+'.so'
+            target = './_'+self.name+libext
 
         structdef = arraydims(self.compiler)
         descr = arraydescr(self.compiler)
@@ -308,8 +318,7 @@ class fortran_library:
                        libraries=[self.name],
                        library_dirs=['.', self.libpath],
                        extra_compile_args=extraargs,
-                       extra_link_args=['-Wl,-rpath,'+self.libpath,
-                                        '-lgfortran'])
+                       extra_link_args=['-Wl,-rpath,'+self.libpath])
 
         debug('Compilation starting')
         ffi.compile(tmpdir, verbose, target, debugflag)
@@ -334,7 +343,7 @@ class fortran_library:
 class fortran_module:
     def __init__(self, library, name, maxdim=7, path=None, compiler=None):
         if isinstance(library, str):
-            self.library = fortran_library(library, maxdim, path, compiler=None)
+            self.library = fortran_library(library, maxdim, path, compiler)
         else:
             self.library = library
         self.name = name
