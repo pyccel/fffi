@@ -51,9 +51,9 @@ Suffix:
 
 // R1230, R1234
 // TODO: make END SUBROUTINE name work
-SubProgramEnding[ws='[ \t]']:
-      ( 'END' )
-    | ( 'END' ('SUBROUTINE' | 'FUNCTION') )
+SubProgramEnding:
+  ( 'END' )
+  | ( 'END' ('SUBROUTINE' | 'FUNCTION') )
 ;
 
 // R207, R501
