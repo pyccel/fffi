@@ -15,6 +15,7 @@ import subprocess
 from cffi import FFI
 
 from .parser import parse
+# from .parser.lfortran import parse
 
 log_warn = True
 log_debug = False
@@ -22,7 +23,7 @@ log_debug = False
 if 'linux' in sys.platform:
     libext = '.so'
 elif 'darwin' in sys.platform:
-    libext = '.so'
+    libext = '.dylib'
 elif 'win' in sys.platform:
     libext = '.dll'
 
@@ -120,7 +121,7 @@ ctypemap = {
             ('real', 8): 'double'
         }
 
-def ccodegen(subprogram):
+def ccodegen(subprogram, module=True):
     cargs = []
     for arg in subprogram.args:
         # TODO: add handling of fixed size array arguments
@@ -143,8 +144,14 @@ def ccodegen(subprogram):
 
         cargs.append('{} *{}'.format(ctypename, arg))
 
-    csource = 'extern void {{mod}}_{}{{suffix}}({});\n'.format(
-        subprogram.name, ','.join(cargs))
+    if module:  # subroutine in module
+        csource = 'extern void {{mod}}_{}{{suffix}}({});\n'.format(
+            subprogram.name, ','.join(cargs))
+    else:  # global subroutine
+        csource = 'extern void {}_({});\n'.format(
+            subprogram.name, ','.join(cargs))
+
+
     return csource
 
 def c_declaration(var):
@@ -301,6 +308,10 @@ class fortran_library:
         if not verbose:
             extraargs.append('-Wno-implicit-function-declaration')
 
+        extralinkargs = []
+        if self.compiler['name'] in ('gfortran', 'ifort'):
+            extralinkargs.append('-Wl,-rpath,'+self.libpath)
+
         if self.path:
             target = os.path.join(self.path, '_'+self.name+libext)
         else:
@@ -318,7 +329,7 @@ class fortran_library:
                        libraries=[self.name],
                        library_dirs=['.', self.libpath],
                        extra_compile_args=extraargs,
-                       extra_link_args=['-Wl,-rpath,'+self.libpath])
+                       extra_link_args=extralinkargs)
 
         debug('Compilation starting')
         ffi.compile(tmpdir, verbose, target, debugflag)
@@ -338,6 +349,36 @@ class fortran_library:
         self._ffi = self._mod.ffi
         self._lib = self._mod.lib
         self.loaded = True
+
+    
+    def cdef(self, csource):
+        """
+        Specifies C source with suffix template replacements
+        """
+        self.csource += csource
+        debug('C signatures are\n' + self.csource)
+
+
+    def fdef(self, fsource):
+        ast = parse(fsource)
+
+        csource = ''
+        for typename, typedef in ast.types.items():
+            debug('Adding type {}'.format(typename))
+            csource += 'struct {} {{{{\n'.format(typename)
+            for decl in typedef.declarations:
+                for varname, var in decl.namespace.items():
+                    ctype, cdecl = c_declaration(var)
+                    debug('{} {}'.format(ctype, cdecl))
+                    csource += '{} {};\n'.format(ctype, cdecl)
+            csource += '}};\n'
+           # csource += ccodegen(subp)
+        for subname, subp in ast.subprograms.items():
+            debug('Adding subprogram {}({})'.format(
+                    subname, ','.join(subp.args)))
+            csource += ccodegen(subp, module=False)
+
+        self.cdef(csource)
         
 
 class fortran_module:
