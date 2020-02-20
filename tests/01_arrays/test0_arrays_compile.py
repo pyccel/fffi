@@ -36,6 +36,7 @@ class TestArraysCompile(TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        os.system('make clean')
         os.chdir(cls.origcwd)
         rmtree(cls.tmpdir)
 

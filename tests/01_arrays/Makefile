@@ -18,4 +18,4 @@ static/mod_arrays.o: mod_arrays.f90
 	$(FC) -c -J static/ -o static/mod_arrays.o mod_arrays.f90
 
 clean:
-	rm -f static/* shared/* *.o *.mod *.a *.so *.x
+	rm -f static/* shared/* *.o *.mod *.a *.so *.x _*.c

@@ -48,17 +48,17 @@ def arraydims(compiler):
                 signed short attribute;
               };
             """
-        else:
-            return """
-              typedef struct array_dims array_dims;
-              struct array_dims {
-                ptrdiff_t stride;
-                ptrdiff_t lower_bound;
-                ptrdiff_t upper_bound;
-              };
-            """
+        # gfortran version < 8    
+        return """
+            typedef struct array_dims array_dims;
+            struct array_dims {
+            ptrdiff_t stride;
+            ptrdiff_t lower_bound;
+            ptrdiff_t upper_bound;
+            };
+        """
     elif compiler['name'] == 'ifort':
-            return """
+        return """
               typedef struct array_dims array_dims;
               struct array_dims {
                 uintptr_t extent;
@@ -95,7 +95,7 @@ def arraydescr(compiler):
               }};
             """
     elif compiler['name'] == 'ifort':
-            return """
+        return """
               typedef struct array_{0}d array_{0}d;
               struct array_{0}d {{
                 void *base_addr;
@@ -113,13 +113,14 @@ def arraydescr(compiler):
 
 
 ctypemap = {
-            ('int', 1): 'int8_t',
-            ('int', 2): 'int16_t',
-            ('int', 4): 'int32_t',
-            ('int', 8): 'int64_t',
-            ('real', 4): 'float',
-            ('real', 8): 'double'
-        }
+    ('int', 1): 'int8_t',
+    ('int', 2): 'int16_t',
+    ('int', 4): 'int32_t',
+    ('int', 8): 'int64_t',
+    ('real', 4): 'float',
+    ('real', 8): 'double'
+}
+
 
 def ccodegen(subprogram, module=True):
     cargs = []
@@ -131,7 +132,7 @@ def ccodegen(subprogram, module=True):
         precision = attrs.precision
         debug('{} rank={} bytes={}'.format(dtype, rank, precision))
 
-        if dtype.startswith('type'): 
+        if dtype.startswith('type'):
             typename = dtype.split(' ')[1]
             ctypename = 'struct {}'.format(typename)
         elif rank == 0:
@@ -151,18 +152,18 @@ def ccodegen(subprogram, module=True):
         csource = 'extern void {}_({});\n'.format(
             subprogram.name, ','.join(cargs))
 
-
     return csource
+
 
 def c_declaration(var):
     # TODO: add support for derived types also here
     ctype = ctypemap[(var.dtype, var.precision)]
-    
+
     # Scalars
     if var.rank == 0:
         debug('Adding scalar {} ({})'.format(var.name, ctype))
         return ctype, var.name.lower()
-    
+
     if not(var.shape):
         # TODO: add support for assumed size and/or allocatable arrays
         # csource += 'extern struct array_{}d {{mod}}_{};\n'.format(var.rank, varname)
@@ -170,16 +171,16 @@ def c_declaration(var):
             Declaration of assumed size and/or allocatable arrays
             not yet supported.
             ''')
-    
+
     # Fixed size arrays
-    
+
     if var.rank == 1:
         debug('Adding rank {} array {} ({})'.format(var.rank, var.name, ctype))
         length = var.shape[0][1]
         return ctype, '{}[{}]'.format(var.name.lower(), length)
     elif var.rank > 1:
         raise NotImplementedError(
-        '''Fixed size arrays with rank > 1 not yet supported 
+            '''Fixed size arrays with rank > 1 not yet supported 
            as module variables''')
     else:
         ctype = 'array_{}d'.format(var.rank)
@@ -210,7 +211,7 @@ def numpy2fortran(ffi, arr, compiler):
             arrdata.dtype = ndims  # rank of the array
             arrdata.dtype = arrdata.dtype | (3 << 3)  # float: "3" TODO:others
             arrdata.dtype = arrdata.dtype | (arr.dtype.itemsize << 6)
-        
+
         stride = 1
         for kd in range(ndims):
             arrdata.dim[kd].stride = stride
@@ -230,14 +231,14 @@ def numpy2fortran(ffi, arr, compiler):
             arrdata.dim[kd].extent = arr.shape[kd]
             distance = distance*arr.shape[kd]
 
-
     return arrdata
+
 
 def fortran2numpy(ffi, data):
     # See https://gist.github.com/yig/77667e676163bbfc6c44af02657618a6
     # TODO: add support for more types than real(8) and also assumed size
     ptr = ffi.addressof(data)
-    return np.frombuffer(ffi.buffer(ptr, 8*len(data)), 'f8' )
+    return np.frombuffer(ffi.buffer(ptr, 8*len(data)), 'f8')
 
 
 def warn(output):
@@ -261,6 +262,7 @@ def debug(output):
     print('DEBUG {}:{} {}():'.format(filename, line_number, function_name))
     print(output)
 
+
 class fortran_library:
     def __init__(self, name, maxdim=7, path=None, compiler=None):
         self.name = name
@@ -269,7 +271,7 @@ class fortran_library:
         self.loaded = False
         self.compiler = compiler
         self.path = path
-        
+
         if self.path:
             self.libpath = self.path
         else:
@@ -287,16 +289,14 @@ class fortran_library:
                     self.compiler = {'name': 'gfortran', 'version': major}
                     debug(self.compiler)
                     break
-            
+
         if self.compiler is None:  # fallback to recent gfortran
-            self.compiler={'name':'gfortran', 'version': 9}
-                
+            self.compiler = {'name': 'gfortran', 'version': 9}
 
         # Manual path specification is required for tests via `setup.py test`
         # which would not find the extension module otherwise
         if self.path not in sys.path:
             sys.path.append(self.path)
-    
 
     def compile(self, tmpdir='.', verbose=0, debugflag=None):
         """
@@ -311,6 +311,8 @@ class fortran_library:
         extralinkargs = []
         if self.compiler['name'] in ('gfortran', 'ifort'):
             extralinkargs.append('-Wl,-rpath,'+self.libpath)
+        if self.compiler['name'] == 'gfortran':
+            extralinkargs.append('-lgfortran')
 
         if self.path:
             target = os.path.join(self.path, '_'+self.name+libext)
@@ -350,14 +352,12 @@ class fortran_library:
         self._lib = self._mod.lib
         self.loaded = True
 
-    
     def cdef(self, csource):
         """
         Specifies C source with suffix template replacements
         """
         self.csource += csource
         debug('C signatures are\n' + self.csource)
-
 
     def fdef(self, fsource):
         ast = parse(fsource)
@@ -375,11 +375,26 @@ class fortran_library:
            # csource += ccodegen(subp)
         for subname, subp in ast.subprograms.items():
             debug('Adding subprogram {}({})'.format(
-                    subname, ','.join(subp.args)))
+                subname, ','.join(subp.args)))
             csource += ccodegen(subp, module=False)
 
         self.cdef(csource)
-        
+
+    def new(self, typename, value=None):
+        typelow = typename.lower()  # Case-insensitive Fortran
+
+        # Basic types
+        if typelow == 'integer':
+            return self._ffi.new('int*', value)
+        if typelow == 'real':
+            return self._ffi.new('double*', value)
+
+        # User-defined types
+        if value is None:
+            return self._ffi.new('struct {} *'.format(typename))
+        raise NotImplementedError(
+            'Cannot assign value to type {}'.format(typename))
+
 
 class fortran_module:
     def __init__(self, library, name, maxdim=7, path=None, compiler=None):
@@ -397,7 +412,7 @@ class fortran_module:
         return sorted(self.methods | self.variables)
 
     def __getattr__(self, attr):
-        if ('methods' in self.__dict__)  and (attr in self.methods):
+        if ('methods' in self.__dict__) and (attr in self.methods):
             def method(*args): return self.__call_fortran(attr, *args)
             return method
         if ('variables' in self.__dict__) and (attr in self.variables):
@@ -420,7 +435,6 @@ class fortran_module:
         else:
             super(fortran_module, self).__setattr__(attr, value)
 
-
     def __call_fortran(self, function, *args):
         """
         Calls a Fortran module routine based on its name
@@ -435,7 +449,7 @@ class fortran_module:
             elif isinstance(arg, float):
                 cargs.append(self.library._ffi.new('double*', arg))
             elif isinstance(arg, np.ndarray):
-                cargs.append(numpy2fortran(self.library._ffi, arg, 
+                cargs.append(numpy2fortran(self.library._ffi, arg,
                                            self.library.compiler))
             else:  # TODO: add more basic types
                 cargs.append(arg)
@@ -464,10 +478,10 @@ class fortran_module:
                 '''Compiler {} not supported. Use gfortran or ifort
                 '''.format(self.library.compiler))
         var = getattr(self.library._lib, varname)
-        
+
         if isinstance(var, self.library._ffi.CData):  # array
             return fortran2numpy(self.library._ffi, var)
-        
+
         return var
 
     def cdef(self, csource):
@@ -489,7 +503,6 @@ class fortran_module:
                 '''.format(self.library.compiler))
         debug('C signatures are\n' + self.csource)
         self.library.csource = self.library.csource + self.csource
-        
 
     def fdef(self, fsource):
         ast = parse(fsource)
@@ -507,7 +520,7 @@ class fortran_module:
            # csource += ccodegen(subp)
         for subname, subp in ast.subprograms.items():
             debug('Adding subprogram {}({})'.format(
-                    subname, ','.join(subp.args)))
+                subname, ','.join(subp.args)))
             csource += ccodegen(subp)
 
         for varname, var in ast.namespace.items():
@@ -515,7 +528,7 @@ class fortran_module:
             csource += 'extern {} {{mod}}_{}{{suffix}};\n'.format(ctype, cdecl)
 
         self.cdef(csource)
-    
+
     def load(self):
         if not self.library.loaded:
             self.library.load()
@@ -530,14 +543,14 @@ class fortran_module:
                 raise NotImplementedError(
                     '''Compiler {} not supported. Use gfortran or ifort
                     '''.format(self.compiler))
-            if not mod_sym in m: 
+            if not mod_sym in m:
                 continue
             mname = re.sub(mod_sym, '', m)
             if self.library.compiler['name'] == 'ifort':
                 mname = mname.strip('_')
             attr = getattr(self.library._lib, m)
             debug('Name: {}, Type: {}, Callable: {}'.format(
-                    mname, type(attr), callable(attr)))
+                mname, type(attr), callable(attr)))
             if isinstance(attr, self.library._ffi.CData):  # array variable
                 self.variables.add(mname)
             elif callable(attr):  # subroutine or function
@@ -547,6 +560,6 @@ class fortran_module:
 
     def compile(self, tmpdir='.', verbose=0, debugflag=None):
         self.library.compile(tmpdir, verbose, debugflag)
-        
+
     def new(self, typename):
-        return self.library._ffi.new('struct {} *'.format(typename))
+        return self.library.new(typename)

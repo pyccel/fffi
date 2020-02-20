@@ -6,7 +6,6 @@ Supposes that test_arrays_compile has already been run
 to generate CFFI API interface as a Python extension module
 """
 
-import numpy as np
 import gc
 import os
 import subprocess
@@ -14,6 +13,7 @@ import tracemalloc
 
 from unittest import TestCase
 
+import numpy as np
 from fffi import fortran_module
 
 
@@ -35,7 +35,7 @@ class TestArrays(TestCase):
             ref_out = subprocess.check_output('./test_arrays.x')
 
             # Reference output for vector
-            refspl = ref_out.replace(b' ',b'').split(b'\n\n\n')
+            refspl = ref_out.replace(b' ', b'').split(b'\n\n\n')
             cls.refvec = np.fromstring(refspl[0], sep='\n')
 
             # Reference output for 2D array
@@ -70,6 +70,7 @@ class TestArrays(TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        os.system('make clean')
         os.chdir(cls.origcwd)
 
     def test_vector(self):

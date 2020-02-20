@@ -3,7 +3,7 @@ Created: Thu Jul 25 12:29:27 2019
 @author: Christopher Albert <albert@alumni.tugraz.at>
 """
 
-#%% Import, compile and load
+# %% Import, compile and load
 from numpy import array, linspace
 from fffi import fortran_library, fortran_module
 
@@ -36,7 +36,7 @@ fortmod.fdef("""
 libfortmod.compile()  # only required when Fortran library has changed
 fortmod.load()
 
-#%% Try some stuff
+# %% Try some stuff
 
 print('Before init(): member = {}'.format(fortmod.member))
 fortmod.init()
@@ -52,7 +52,7 @@ print('Before modify_vector(z, 4): z = {}'.format(z))
 fortmod.modify_vector(z, 4)
 print('After modify_vector(z, 4): z = {}'.format(z))
 
-A = array([[1,2],[3,4]], order='F')
+A = array([[1, 2], [3, 4]], order='F')
 print('Before modify_matrix(A, 1): z = {}'.format(A))
 fortmod.modify_matrix(A, 1.0)
 print('After modify_matrix(A, 1): z = {}'.format(A))

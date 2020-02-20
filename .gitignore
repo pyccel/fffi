@@ -6,7 +6,10 @@ _*.c
 *.[oax]
 *.so
 *.mod
+*.obj
+*.pdf
+a.out
+launch.json
 *.pyc
 coverage.xml
 .eggs
-

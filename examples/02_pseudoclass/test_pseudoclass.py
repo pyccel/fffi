@@ -3,8 +3,6 @@ from fffi import fortran_library, fortran_module
 lib = fortran_library('pseudoclass')
 classmod = fortran_module(lib, 'class_circle')
 
-# member variable and subroutine definition stub
-# TODO: parse fortmod.f90 automatically and strip away implementation
 classmod.fdef("""
 type Circle
   double precision :: radius
@@ -15,9 +13,20 @@ subroutine circle_print(self)
 end
 """)
 
-lib.compile()  # only required when Fortran library has changed
+lib.compile()
 classmod.load()
 
 cir = classmod.new('Circle')
 cir.radius = 3.0
+
+print('Radius: {}'.format(cir.radius))
+print('Fortran output:')
 classmod.circle_print(cir)
+
+#
+# To print Fortran stdout in Jupyter/IPython REPL:
+#
+# from wurlitzer import sys_pipes()
+# with sys_pipes():  # required to print Fortran stdout in Jupyter
+#     classmod.circle_print(cir)
+#
