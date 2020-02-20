@@ -161,7 +161,7 @@ def c_declaration(var):
     # Scalars
     if var.rank == 0:
         debug('Adding scalar {} ({})'.format(var.name, ctype))
-        return ctype, var.name
+        return ctype, var.name.lower()
     
     if not(var.shape):
         # TODO: add support for assumed size and/or allocatable arrays
@@ -176,14 +176,14 @@ def c_declaration(var):
     if var.rank == 1:
         debug('Adding rank {} array {} ({})'.format(var.rank, var.name, ctype))
         length = var.shape[0][1]
-        return ctype, '{}[{}]'.format(var.name, length)
+        return ctype, '{}[{}]'.format(var.name.lower(), length)
     elif var.rank > 1:
         raise NotImplementedError(
         '''Fixed size arrays with rank > 1 not yet supported 
            as module variables''')
     else:
         ctype = 'array_{}d'.format(var.rank)
-        return (ctype + '*'), var.name
+        return (ctype + '*'), var.name.lower()
 
 
 def numpy2fortran(ffi, arr, compiler):
