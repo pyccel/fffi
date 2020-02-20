@@ -48,7 +48,7 @@ def arraydims(compiler):
                 signed short attribute;
               };
             """
-        # gfortran version < 8    
+        # gfortran version < 8
         return """
             typedef struct array_dims array_dims;
             struct array_dims {
