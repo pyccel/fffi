@@ -367,7 +367,7 @@ class fortran_library:
             debug('Adding type {}'.format(typename))
             csource += 'struct {} {{{{\n'.format(typename)
             for decl in typedef.declarations:
-                for varname, var in decl.namespace.items():
+                for var in decl.namespace.values():
                     ctype, cdecl = c_declaration(var)
                     debug('{} {}'.format(ctype, cdecl))
                     csource += '{} {};\n'.format(ctype, cdecl)
@@ -512,7 +512,7 @@ class fortran_module:
             debug('Adding type {}'.format(typename))
             csource += 'struct {} {{{{\n'.format(typename)
             for decl in typedef.declarations:
-                for varname, var in decl.namespace.items():
+                for var in decl.namespace.values():
                     ctype, cdecl = c_declaration(var)
                     debug('{} {}'.format(ctype, cdecl))
                     csource += '{} {};\n'.format(ctype, cdecl)
@@ -523,7 +523,7 @@ class fortran_module:
                 subname, ','.join(subp.args)))
             csource += ccodegen(subp)
 
-        for varname, var in ast.namespace.items():
+        for var in ast.namespace.values():
             ctype, cdecl = c_declaration(var)
             csource += 'extern {} {{mod}}_{}{{suffix}};\n'.format(ctype, cdecl)
 
