@@ -51,7 +51,7 @@ Suffix:
 
 // R1230, R1234
 // TODO: make END SUBROUTINE name work
-SubProgramEnding[ws='[ \t]']:
+SubProgramEnding:
   'END SUBROUTINE 'ID
   | 'END FUNCTION 'ID
   | 'END SUBROUTINE'
