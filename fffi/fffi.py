@@ -181,7 +181,7 @@ def c_declaration(var):
         return ctype, '{}[{}]'.format(var.name.lower(), length)
     elif var.rank > 1:
         raise NotImplementedError(
-            '''Fixed size arrays with rank > 1 not yet supported 
+            '''Fixed size arrays with rank > 1 not yet supported
            as module variables''')
     else:
         ctype = 'array_{}d'.format(var.rank)

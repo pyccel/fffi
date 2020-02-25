@@ -127,7 +127,7 @@ def test_array_2d_multi(mod_arrays, refarr):
     snapshot1 = tracemalloc.take_snapshot()
     arr = np.ones((m, n), order='F')  # correct array order
 
-    for k in range(10):
+    for _ in range(10):
         arr[:, :] = 1.0
         mod_arrays.test_array_2d(arr)
         np.testing.assert_almost_equal(arr, refarr)
@@ -139,7 +139,7 @@ def test_array_2d_multi(mod_arrays, refarr):
     statsum = sum(stat.count_diff for stat in stats)
 
     snapshot1 = tracemalloc.take_snapshot()
-    for k in range(1000):
+    for _ in range(1000):
         arr[:, :] = 1.0
         mod_arrays.test_array_2d(arr)
         np.testing.assert_almost_equal(arr, refarr)
