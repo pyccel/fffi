@@ -2,12 +2,12 @@ language: python
 python:
 - '3.6'
 before_install:
-- sudo apt-get install gfortran
+- sudo apt-get install gfortran jq
 install:
 - pip install -r requirements.txt
-- pip install coverage codacy-coverage
+- pip install coverage
 script:
-- coverage run setup.py test
-- coverage xml
-- python-codacy-coverage
+- coverage run pytest
+- coverage xml -o cobertura.xml
+- bash <(curl -Ls https://coverage.codacy.com/get.sh)
 

@@ -13,3 +13,6 @@ launch.json
 *.pyc
 coverage.xml
 .eggs
+.codacy-coverage
+cobertura.xml
+codacy-coverage.json
