@@ -5,9 +5,9 @@ test:
   stage: test
   script:
   - apt-get update -qy
-  - apt-get install -y python-dev python-pip gfortran jq
-  - pip install -r requirements.txt
-  - pip install coverage pytest
-  - coverage run pytest
+  - apt-get install -y python3 python3-pip gfortran jq
+  - pip3 install -r requirements.txt
+  - pip3 install coverage pytest
+  - coverage run -m pytest
   - coverage xml -o cobertura.xml
   - bash <(curl -Ls https://coverage.codacy.com/get.sh)
