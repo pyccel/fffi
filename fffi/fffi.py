@@ -20,7 +20,7 @@ from .parser import parse
 # from .parser.lfortran import parse
 
 log_warn = True
-log_debug = False
+log_debug = True
 
 if 'linux' in sys.platform:
     libext = '.so'
@@ -117,6 +117,7 @@ ctypemap = {
     ('real', None): 'float',
     ('complex', None): 'float _Complex',
     ('logical', None): '_Bool',
+    ('str', None): 'char',
     ('int', 1): 'int8_t',
     ('int', 2): 'int16_t',
     ('int', 4): 'int32_t',
@@ -131,6 +132,7 @@ ctypemap = {
 
 def ccodegen(subprogram, module=True):
     cargs = []
+    nstr = 0  # number of string arguments, for adding hidden length arguments
     for arg in subprogram.args:
         # TODO: add handling of fixed size array arguments
         attrs = subprogram.namespace[arg]
@@ -138,6 +140,9 @@ def ccodegen(subprogram, module=True):
         rank = attrs.rank
         precision = attrs.precision
         debug('{} rank={} bytes={}'.format(dtype, rank, precision))
+
+        if dtype == 'str':
+            nstr = nstr+1
 
         if dtype.startswith('type'):
             typename = dtype.split(' ')[1]
@@ -151,6 +156,9 @@ def ccodegen(subprogram, module=True):
             raise NotImplementedError('{} rank={}'.format(dtype, rank))
 
         cargs.append('{} *{}'.format(ctypename, arg))
+
+    for kstr in range(nstr):
+        cargs.append('size_t strlen{}'.format(kstr))
 
     if module:  # subroutine in module
         csource = 'extern void {{mod}}_{}{{suffix}}({});\n'.format(

@@ -5,6 +5,8 @@ __pycache__
 _*.c
 *.[oax]
 *.so
+*.dylib
+*.dll
 *.mod
 *.obj
 *.pdf
@@ -16,3 +18,4 @@ coverage.xml
 .codacy-coverage
 cobertura.xml
 codacy-coverage.json
+draft/_test_strings.dylib

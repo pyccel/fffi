@@ -55,7 +55,8 @@ dtype_registry = {'real': ('real', 8),
                   'int64': ('int', 8),
                   'int': ('int', 4),
                   'integer': ('int', 4),
-                  'logical': ('logical', 4)}
+                  'logical': ('logical', 4),
+                  'character': ('str', None)}
 
 # ==============================================================================
 

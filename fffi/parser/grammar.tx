@@ -139,7 +139,7 @@ IntrinsicType:
     | name='LOGICAL' ('('('kind=')?kind=INT')')?
     | name='DOUBLE PRECISION'
     | name='DOUBLE COMPLEX'
-    | name='CHARACTER'
+    | name='CHARACTER' ('('('len=')?'*'')')?
 ;
 
 DerivedType:
