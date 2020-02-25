@@ -1,0 +1,11 @@
+stages:
+  - test
+
+test:
+  stage: test
+  script:
+  - apt-get update -qy
+  - pip install -r requirements.txt
+  - pip install coverage
+  - coverage run pytest
+  - coverage xml -o cobertura.xml
