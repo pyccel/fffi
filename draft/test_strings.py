@@ -11,10 +11,11 @@ lib.fdef("""
     end subroutine test_string
 """)
 
-lib.compile(verbose=True)
+#lib.compile(verbose=True)
 lib.load()
 print(lib.csource)
-lib._lib.test0_()
 
-x = lib._ffi.new("char[]", "Hello, Fortran!".encode('ascii'))
-lib._lib.test_string_(x, len(x))
+
+print(dir(lib._lib))
+lib.test0()
+lib.test_string('Hello, Fortran!')

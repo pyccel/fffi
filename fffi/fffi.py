@@ -20,7 +20,7 @@ from .parser import parse
 # from .parser.lfortran import parse
 
 log_warn = True
-log_debug = True
+log_debug = False
 
 if 'linux' in sys.platform:
     libext = '.so'
@@ -285,6 +285,7 @@ class fortran_library:
         self.csource = ''
         self.loaded = False
         self.compiler = compiler
+        self.methods = set()
 
         if isinstance(path, Path):
             self.path = path.__str__()
@@ -316,6 +317,50 @@ class fortran_library:
         # which would not find the extension module otherwise
         if self.path not in sys.path:
             sys.path.append(self.path)
+
+    def __dir__(self):
+        return sorted(self.methods)
+
+    def __getattr__(self, attr):
+        if ('methods' in self.__dict__) and (attr in self.methods):
+            def method(*args):
+                return self.__call_fortran(attr, *args)
+            return method
+        raise AttributeError('''Fortran library \'{}\' has no routine
+                                \'{}\'.'''.format(self.name, attr))
+
+
+    def __call_fortran(self, function, *args):
+        """
+        Calls a Fortran module routine based on its name
+        """
+        # TODO: scalars should be able to be either mutable 0d numpy arrays
+        # for in/out, or immutable Python types for pure input
+        # TODO: should be able to cast variables e.g. int/float if needed
+        cargs = []
+        cextraargs = []
+        for arg in args:
+            if isinstance(arg, str):
+                cargs.append(self._ffi.new("char[]", arg.encode('ascii')))
+                cextraargs.append(len(arg))
+            elif isinstance(arg, int):
+                cargs.append(self._ffi.new('int32_t*', arg))
+            elif isinstance(arg, float):
+                cargs.append(self._ffi.new('double*', arg))
+            elif isinstance(arg, np.ndarray):
+                cargs.append(numpy2fortran(self._ffi, arg,
+                                           self.compiler))
+            else:  # TODO: add more basic types
+                cargs.append(arg)
+        if self.compiler['name'] in ['gfortran', 'ifort']:
+            funcname = function + '_'
+        else:
+            raise NotImplementedError(
+                '''Compiler {} not supported. Use gfortran or ifort
+                '''.format(self.compiler))
+        func = getattr(self._lib, funcname)
+        debug('Calling {}({})'.format(funcname, cargs))
+        func(*(cargs + cextraargs))
 
     def compile(self, tmpdir='.', verbose=0, debugflag=None):
         """
@@ -369,6 +414,19 @@ class fortran_library:
         self._mod = importlib.import_module('_'+self.name)
         self._ffi = self._mod.ffi
         self._lib = self._mod.lib
+
+        self.methods = set()
+        ext_methods = dir(self._lib)
+        for m in ext_methods:
+            if not m.endswith('_'):
+                continue
+            mname = m.strip('_')
+            attr = getattr(self._lib, m)
+            debug('Name: {}, Type: {}, Callable: {}'.format(
+                mname, type(attr), callable(attr)))
+            if callable(attr):  # subroutine or function
+                self.methods.add(mname)
+
         self.loaded = True
 
     def cdef(self, csource):
