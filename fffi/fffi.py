@@ -10,10 +10,11 @@ import inspect
 import os
 import re
 import sys
-import numpy as np
 import subprocess
 from pathlib import Path
+
 from cffi import FFI
+import numpy as np
 
 from .parser import parse
 # from .parser.lfortran import parse
@@ -58,7 +59,7 @@ def arraydims(compiler):
             ptrdiff_t upper_bound;
             };
         """
-    elif compiler['name'] == 'ifort':
+    if compiler['name'] == 'ifort':
         return """
               typedef struct array_dims array_dims;
               struct array_dims {
@@ -68,8 +69,8 @@ def arraydims(compiler):
               };
             """
     else:
-        raise NotImplementedError('''Compiler {} not supported.
-                                     Use gfortran or ifort'''.format(compiler))
+        raise NotImplementedError(
+            "Compiler {} not supported. Use gfortran or ifort".format(compiler))
 
 
 def arraydescr(compiler):
@@ -85,17 +86,16 @@ def arraydescr(compiler):
                 struct array_dims dim[{0}];
               }};
             """
-        else:
-            return """
-              typedef struct array_{0}d array_{0}d;
-              struct array_{0}d {{
-                void *base_addr;
-                size_t offset;
-                ptrdiff_t dtype;
-                struct array_dims dim[{0}];
-              }};
-            """
-    elif compiler['name'] == 'ifort':
+        return """
+            typedef struct array_{0}d array_{0}d;
+            struct array_{0}d {{
+            void *base_addr;
+            size_t offset;
+            ptrdiff_t dtype;
+            struct array_dims dim[{0}];
+            }};
+        """
+    if compiler['name'] == 'ifort':
         return """
               typedef struct array_{0}d array_{0}d;
               struct array_{0}d {{
@@ -108,18 +108,24 @@ def arraydescr(compiler):
                 struct array_dims dim[{0}];
               }};
             """
-    else:
-        raise NotImplementedError('''Compiler {} not supported.
-                                     Use gfortran or ifort'''.format(compiler))
+    raise NotImplementedError(
+        "Compiler {} not supported. Use gfortran or ifort".format(compiler))
 
 
 ctypemap = {
+    ('int', None): 'int32_t',
+    ('real', None): 'float',
+    ('complex', None): 'float _Complex',
+    ('logical', None): '_Bool',
     ('int', 1): 'int8_t',
     ('int', 2): 'int16_t',
     ('int', 4): 'int32_t',
     ('int', 8): 'int64_t',
     ('real', 4): 'float',
-    ('real', 8): 'double'
+    ('real', 8): 'double',
+    ('complex', 4): 'float _Complex',
+    ('complex', 8): 'double _Complex',
+    ('logical', 4): '_Bool'
 }
 
 
@@ -165,11 +171,11 @@ def c_declaration(var):
         debug('Adding scalar {} ({})'.format(var.name, ctype))
         return ctype, var.name.lower()
 
-    if not(var.shape):
-        # TODO: add support for assumed size and/or allocatable arrays
+    if not var.shape:
+        # TODO: add support for assumed shape and/or allocatable arrays
         # csource += 'extern struct array_{}d {{mod}}_{};\n'.format(var.rank, varname)
         raise NotImplementedError('''
-            Declaration of assumed size and/or allocatable arrays
+            Declaration of assumed shape and/or allocatable arrays
             not yet supported.
             ''')
 
@@ -418,13 +424,13 @@ class fortran_module:
 
     def __getattr__(self, attr):
         if ('methods' in self.__dict__) and (attr in self.methods):
-            def method(*args): return self.__call_fortran(attr, *args)
+            def method(*args):
+                return self.__call_fortran(attr, *args)
             return method
         if ('variables' in self.__dict__) and (attr in self.variables):
             return self.__get_var_fortran(attr)
-        else:
-            raise AttributeError('''Fortran module \'{}\' has no attribute
-                                    \'{}\'.'''.format(self.name, attr))
+        raise AttributeError('''Fortran module \'{}\' has no attribute
+                                \'{}\'.'''.format(self.name, attr))
 
     def __setattr__(self, attr, value):
         if ('variables' in self.__dict__) and (attr in self.variables):
