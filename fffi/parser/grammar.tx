@@ -64,9 +64,9 @@ Declaration:
 
 // R502
 DeclarationType:
-      kind=IntrinsicType 
-    | kind='TYPE' '(' name=ID ')'
-//    | kind='CLASS' //(DerivedType | STAR)? // TODO
+      type=IntrinsicType 
+    | type='TYPE' '(' name=ID ')'
+//  | type='CLASS' //(DerivedType | STAR)? // TODO
 ;
 
 // R503
@@ -128,15 +128,15 @@ ArrayBound:
     | ID
 ;
 
-
+// R404 for kind
 IntrinsicType:
-      'INTEGER' 
-    | 'REAL' 
-    | 'COMPLEX' 
-    | 'DOUBLE PRECISION' // TODO allowing for white spaces 
-    | 'DOUBLE COMPLEX' // TODO allowing for white spaces 
-    | 'LOGICAL' 
-    | 'CHARACTER' 
+      name='INTEGER' ('('('kind=')?kind=INT')')?
+    | name='REAL'    ('('('kind=')?kind=INT')')?
+    | name='COMPLEX' ('('('kind=')?kind=INT')')?
+    | name='LOGICAL' ('('('kind=')?kind=INT')')?
+    | name='DOUBLE PRECISION'
+    | name='DOUBLE COMPLEX'
+    | name='CHARACTER'
 ;
 
 // R429

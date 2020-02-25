@@ -54,7 +54,7 @@ dtype_registry = {'real': ('real', 8),
                   'int64': ('int', 8),
                   'int': ('int', 4),
                   'integer': ('int', 4),
-                  'logical': ('int', 1)}
+                  'logical': ('logical', 4)}
 
 # ==============================================================================
 
@@ -147,15 +147,17 @@ class Declaration(object):
     def _build_namespace(self):
         self.namespace = {}
         # ...
-        dtype = self.dtype.kind
-        if dtype.upper() == 'DOUBLE PRECISION':
+        dtype = self.dtype.type
+        if dtype.name.upper() == 'DOUBLE PRECISION':
             dtype = 'DOUBLE'
-
-        if dtype.upper() == 'TYPE':
+        elif dtype.name.upper() == 'TYPE':
             dtype = 'type ' + self.dtype.name
             precision = None
+        elif dtype.kind:
+            precision = dtype.kind
+            dtype = dtype_registry[dtype.name.lower()][0]
         else:
-            dtype, precision = dtype_registry[dtype.lower()]
+            dtype, precision = dtype_registry[dtype.name.lower()]
 
         rank = 0
         shape = None
