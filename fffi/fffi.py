@@ -25,7 +25,7 @@ log_debug = False
 if 'linux' in sys.platform:
     libext = '.so'
 elif 'darwin' in sys.platform:
-    libext = '.dylib'
+    libext = '.so'
 elif 'win' in sys.platform:
     libext = '.dll'
 
