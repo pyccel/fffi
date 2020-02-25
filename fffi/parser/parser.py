@@ -42,6 +42,7 @@ class Variable():
 # TODO: integrate again with pyccel
 dtype_registry = {'real': ('real', 8),
                   'double': ('real', 8),
+                  'double precision': ('real', 8),
                   'float': ('real', 8),
                   'float32': ('real', 4),
                   'float64': ('real', 8),
@@ -148,16 +149,15 @@ class Declaration(object):
         self.namespace = {}
         # ...
         dtype = self.dtype.type
-        if dtype.name.upper() == 'DOUBLE PRECISION':
-            dtype = 'DOUBLE'
-        elif dtype.name.upper() == 'TYPE':
-            dtype = 'type ' + self.dtype.name
+
+        if isinstance(dtype, DerivedType):
+            dtype_type = 'type ' + dtype.name
             precision = None
-        elif dtype.kind:
+        elif hasattr(dtype, 'kind') and dtype.kind:
             precision = dtype.kind
-            dtype = dtype_registry[dtype.name.lower()][0]
+            dtype_type = dtype_registry[dtype.name.lower()][0]
         else:
-            dtype, precision = dtype_registry[dtype.name.lower()]
+            dtype_type, precision = dtype_registry[dtype.name.lower()]
 
         rank = 0
         shape = None
@@ -183,7 +183,7 @@ class Declaration(object):
             if rank == 0 and (arrayspec is not None):
                 localrank = len(arrayspec.expr['shape'])
 
-            var = Variable(dtype,
+            var = Variable(dtype_type,
                            ent.name,
                            rank=localrank,
                            allocatable=is_allocatable,
@@ -259,6 +259,11 @@ class ArrayExplicitShapeSpec(object):
         self.lower_bound = kwargs.pop('lower_bound', 1)
 
 
+class DerivedType(object):
+    def __init__(self, **kwargs):
+        self.name = kwargs.pop('name')
+
+
 class DerivedTypeDefinition(object):
     def __init__(self, **kwargs):
         self.name = kwargs.pop('name')
@@ -308,6 +313,7 @@ def parse(inputs, debug=False):
                DeclarationEntityFunction,
                ArraySpec,
                ArrayExplicitShapeSpec,
+               DerivedType,
                DerivedTypeDefinition]
 
     meta = metamodel_from_file(

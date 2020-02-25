@@ -20,6 +20,31 @@ def fort_mod(tmp_path, cwd):
     return fortran_module('test_parser', 'test_parser_mod', path=tmp_path)
 
 
+def test_subroutine(fort_mod):
+    fort_mod.fdef("""\
+        subroutine test(x)
+            real :: x
+        end
+
+        subroutine test2(x)
+            real :: x
+        end subroutine
+
+        subroutine test3(x)
+            real :: x
+        end subroutine test4
+
+        subroutine test4(x)
+            real :: x
+        end subroutine
+
+        subroutine test5(x)
+            real :: x
+        end
+    """)
+    assert fort_mod.csource
+
+
 def test_scalar_types(fort_mod):
     for dtype in dtypes:
         fort_mod.fdef("""\

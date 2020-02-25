@@ -25,7 +25,7 @@ InternalSubprogram:
   heading=SubProgramHeading
   declarations*=Declaration
   // execution_part=/(!END)*/
-  ending=SubProgramEnding
+  ending=SubProgramEnding 
 ;
 
 // R1224, R1225
@@ -51,9 +51,12 @@ Suffix:
 
 // R1230, R1234
 // TODO: make END SUBROUTINE name work
-SubProgramEnding:
-  ( 'END' )
-  | ( 'END' ('SUBROUTINE' | 'FUNCTION') )
+SubProgramEnding[ws='[ \t]']:
+  'END SUBROUTINE 'ID
+  | 'END FUNCTION 'ID
+  | 'END SUBROUTINE'
+  | 'END FUNCTION'
+  | 'END'
 ;
 
 // R207, R501
@@ -65,7 +68,7 @@ Declaration:
 // R502
 DeclarationType:
       type=IntrinsicType 
-    | type='TYPE' '(' name=ID ')'
+    | type=DerivedType
 //  | type='CLASS' //(DerivedType | STAR)? // TODO
 ;
 
@@ -137,6 +140,10 @@ IntrinsicType:
     | name='DOUBLE PRECISION'
     | name='DOUBLE COMPLEX'
     | name='CHARACTER'
+;
+
+DerivedType:
+  'TYPE' '(' name=ID ')'
 ;
 
 // R429
