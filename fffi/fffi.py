@@ -12,6 +12,7 @@ import re
 import sys
 import numpy as np
 import subprocess
+from pathlib import Path
 from cffi import FFI
 
 from .parser import parse
@@ -270,7 +271,11 @@ class fortran_library:
         self.csource = ''
         self.loaded = False
         self.compiler = compiler
-        self.path = path
+
+        if isinstance(path, Path):
+            self.path = path.__str__()
+        else:
+            self.path = path
 
         if self.path:
             self.libpath = self.path
