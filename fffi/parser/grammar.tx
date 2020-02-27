@@ -7,12 +7,14 @@ Statement:
   | InternalSubprogram
   | Declaration
   | DerivedTypeDefinition
+  | Comment
 ;
 
 // R1104
 // TODO: distinguish module subprograms
 Module:
   'MODULE' name=ID
+  SpecificationPart
   declarations*=Declaration
   ( 'CONTAINS'
     subprograms*=InternalSubprogram ) ?
@@ -23,6 +25,7 @@ Module:
 // TODO: allow other stuff in subprograms to parse declarations of actual code
 InternalSubprogram:
   heading=SubProgramHeading
+  SpecificationPart
   declarations*=Declaration
   // execution_part=/(!END)*/
   ending=SubProgramEnding 
@@ -151,6 +154,18 @@ DerivedTypeDefinition:
     'TYPE' (DEF)? name=ID
       declarations*=Declaration
     'END TYPE'
+;
+
+// R204, R1109, R206
+SpecificationPart:
+    ('USE '/.*$/)*
+    ('IMPLICIT '/.*$/)*
+    ('SAVE'/.*$/)*
+;
+
+
+Comment:
+    '!'/.*$/
 ;
 
 DEF:         "::";

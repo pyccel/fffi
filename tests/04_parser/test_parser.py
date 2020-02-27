@@ -86,3 +86,25 @@ def test_array_types(fort_mod):
             """.format(dtype))
 
     assert fort_mod.csource
+
+
+def test_comment(fort_mod):
+    fort_mod.fdef("""\
+        ! Resonant transport regimes in tokamaks
+        ! in the action-angle formalism
+        ! Christopher Albert, 2015-2017
+
+        integer :: i  ! This is an integer
+        """)
+
+    assert fort_mod.csource
+
+
+def test_use(fort_mod):
+    fort_mod.fdef("""\
+        subroutine a
+            use mod_tets
+        end subroutine a
+        """)
+
+    assert fort_mod.csource
