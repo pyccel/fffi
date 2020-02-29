@@ -19,3 +19,7 @@ coverage.xml
 cobertura.xml
 codacy-coverage.json
 draft/_test_strings.dylib
+.mypy_cache
+.*.sw*
+settings.json
+
