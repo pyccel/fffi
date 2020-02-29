@@ -463,9 +463,9 @@ class fortran_library:
         # Basic types
         if typelow in ['integer', 'int']:
             return self._ffi.new('int*', value)
-        if typelow == ['real', 'real(4)', 'float']:
+        if typelow in ['real', 'real(4)', 'float']:
             return self._ffi.new('float*', value)
-        if typelow == ['real(8)', 'double']:
+        if typelow in ['real(8)', 'double']:
             return self._ffi.new('double*', value)
 
         # User-defined types
