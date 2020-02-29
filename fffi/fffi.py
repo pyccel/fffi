@@ -461,8 +461,10 @@ class fortran_library:
         typelow = typename.lower()  # Case-insensitive Fortran
 
         # Basic types
-        if typelow in ['integer', 'int']:
-            return self._ffi.new('int*', value)
+        if typelow in ['integer', 'int', 'int32']:
+            return self._ffi.new('int32_t*', value)
+        if typelow in ['integer(8)', 'int64']:
+            return self._ffi.new('int64_t*', value)
         if typelow in ['real', 'real(4)', 'float']:
             return self._ffi.new('float*', value)
         if typelow in ['real(8)', 'double']:
@@ -522,7 +524,11 @@ class fortran_module:
         # for in/out, or immutable Python types for pure input
         # TODO: should be able to cast variables e.g. int/float if needed
         cargs = []
+        cextraargs = []
         for arg in args:
+            if isinstance(arg, str):
+                cargs.append(self._ffi.new("char[]", arg.encode('ascii')))
+                cextraargs.append(len(arg))
             if isinstance(arg, int):
                 cargs.append(self.lib._ffi.new('int32_t*', arg))
             elif isinstance(arg, float):
@@ -542,7 +548,7 @@ class fortran_module:
                 '''.format(self.lib.compiler))
         func = getattr(self.lib._lib, funcname)
         debug('Calling {}({})'.format(funcname, cargs))
-        func(*cargs)
+        func(*(cargs + cextraargs))
 
     def __get_var_fortran(self, var):
         """
