@@ -138,6 +138,7 @@ def ccodegen(subprogram, module=True):
         attrs = subprogram.namespace[arg]
         dtype = attrs.dtype
         rank = attrs.rank
+        shape = attrs.shape
         precision = attrs.precision
         debug('{} rank={} bytes={}'.format(dtype, rank, precision))
 
@@ -150,7 +151,10 @@ def ccodegen(subprogram, module=True):
         elif rank == 0:
             ctypename = ctypemap[(dtype, precision)]
         else:
-            ctypename = 'array_{}d'.format(rank)
+            if attrs.shape[0][1] is None:  # Assumed size array
+                ctypename = 'array_{}d'.format(rank)
+            else:  # Fixed size array
+                ctypename = ctypemap[(dtype, precision)]
 
         if ctypename is None:
             raise NotImplementedError('{} rank={}'.format(dtype, rank))
@@ -162,10 +166,10 @@ def ccodegen(subprogram, module=True):
 
     if module:  # subroutine in module
         csource = 'extern void {{mod}}_{}{{suffix}}({});\n'.format(
-            subprogram.name, ','.join(cargs))
+            subprogram.name, ', '.join(cargs))
     else:  # global subroutine
         csource = 'extern void {}_({});\n'.format(
-            subprogram.name, ','.join(cargs))
+            subprogram.name, ', '.join(cargs))
 
     return csource
 
@@ -452,7 +456,7 @@ class fortran_library:
            # csource += ccodegen(subp)
         for subname, subp in ast.subprograms.items():
             debug('Adding subprogram {}({})'.format(
-                subname, ','.join(subp.args)))
+                subname, ', '.join(subp.args)))
             csource += ccodegen(subp, module=False)
 
         self.cdef(csource)
@@ -605,7 +609,7 @@ class fortran_module:
            # csource += ccodegen(subp)
         for subname, subp in ast.subprograms.items():
             debug('Adding subprogram {}({})'.format(
-                subname, ','.join(subp.args)))
+                subname, ', '.join(subp.args)))
             csource += ccodegen(subp)
 
         for var in ast.namespace.values():
