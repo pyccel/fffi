@@ -17,10 +17,9 @@ from cffi import FFI
 import numpy as np
 
 from .parser import parse
-# from .parser.lfortran import parse
 
-log_warn = True
-log_debug = False
+LOG_WARN = True
+LOG_DEBUG = False
 
 if 'linux' in sys.platform:
     libext = '.so'
@@ -131,10 +130,20 @@ ctypemap = {
 
 
 def ccodegen(subprogram, module=True):
+    """Generates C function signature for Fortran subprogram.
+
+    Parameters:
+        subprogram: AST branch representing a Fortran subroutine or function.
+        module (bool): True if subprogram is part of a module, False otherwise.
+
+    Returns:
+        str: C code for the according signature to call the subprogram.
+
+    """
     cargs = []
     nstr = 0  # number of string arguments, for adding hidden length arguments
     for arg in subprogram.args:
-        # TODO: add handling of fixed size array arguments
+        # TODO: add handling of more than 1D fixed size array arguments
         attrs = subprogram.namespace[arg]
         dtype = attrs.dtype
         rank = attrs.rank
@@ -151,7 +160,9 @@ def ccodegen(subprogram, module=True):
         elif rank == 0:
             ctypename = ctypemap[(dtype, precision)]
         else:
-            if attrs.shape[0][1] is None:  # Assumed size array
+            if (shape is None
+                or shape[0] is None
+                    or shape[0][1] is None):  # Assumed size array
                 ctypename = 'array_{}d'.format(rank)
             else:  # Fixed size array
                 ctypename = ctypemap[(dtype, precision)]
@@ -197,13 +208,13 @@ def c_declaration(var):
         debug('Adding rank {} array {} ({})'.format(var.rank, var.name, ctype))
         length = var.shape[0][1]
         return ctype, '{}[{}]'.format(var.name.lower(), length)
-    elif var.rank > 1:
+    if var.rank > 1:
         raise NotImplementedError(
             '''Fixed size arrays with rank > 1 not yet supported
            as module variables''')
-    else:
-        ctype = 'array_{}d'.format(var.rank)
-        return (ctype + '*'), var.name.lower()
+
+    ctype = 'array_{}d'.format(var.rank)
+    return (ctype + '*'), var.name.lower()
 
 
 def numpy2fortran(ffi, arr, compiler):
@@ -271,7 +282,7 @@ def warn(output):
 
 
 def debug(output):
-    if not log_debug:
+    if not LOG_DEBUG:
         return
     caller_frame = inspect.currentframe().f_back
     (filename, line_number,
@@ -332,7 +343,6 @@ class fortran_library:
             return method
         raise AttributeError('''Fortran library \'{}\' has no routine
                                 \'{}\'.'''.format(self.name, attr))
-
 
     def __call_fortran(self, function, *args):
         """
