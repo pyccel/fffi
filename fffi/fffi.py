@@ -26,7 +26,7 @@ if 'linux' in sys.platform:
 elif 'darwin' in sys.platform:
     libext = '.so'
 elif 'win' in sys.platform:
-    libext = '.so'
+    libext = '.dll'
 
 
 def arraydims(compiler):
