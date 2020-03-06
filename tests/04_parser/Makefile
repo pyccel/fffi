@@ -1,12 +1,18 @@
 FC := gfortran
 
-all: libtest_parser.so
+ifeq ($(OS), Windows_NT)
+    LIBEXT := dll
+else
+	LIBEXT := so
+endif
 
-libtest_parser.so: test_parser.o
-	$(FC) -shared test_parser.o -o libtest_parser.so
+all: libtest_parser.$(LIBEXT)
+
+libtest_parser.$(LIBEXT): test_parser.o
+	$(FC) -shared test_parser.o -o libtest_parser.$(LIBEXT)
 
 test_parser.o: test_parser.f90
 	$(FC) -fPIC -c test_parser.f90 -o test_parser.o
 
 clean:
-	rm -f *.o *.mod *.a *.so *.x _*.c
+	rm -f *.o *.mod *.a *.$(LIBEXT) *.x _*.c

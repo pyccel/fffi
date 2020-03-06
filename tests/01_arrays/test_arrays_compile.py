@@ -33,4 +33,4 @@ def test_compile(tmp_path):
         void {mod}_test_array_2d(array_2d *arr);
     """)
 
-    mod_arrays.compile(tmpdir=tmp_path)
+    mod_arrays.compile(tmpdir=tmp_path, verbose=True)
