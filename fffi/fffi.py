@@ -70,13 +70,13 @@ class FortranLibrary:
         if ('methods' in self.__dict__) and (attr in self.methods):
             def method(*args):
                 return call_fortran(
-                    self._ffi, self._lib, attr, self.compiler, *args)
+                    self._ffi, self._lib, attr, self.compiler, None, *args)
             return method
         raise AttributeError('''Fortran library \'{}\' has no routine
                                 \'{}\'.'''.format(self.name, attr))
 
-
-    def compile(self, tmpdir='.', verbose=0, debugflag=None):
+    def compile(self, tmpdir='.', verbose=0, debugflag=None,
+                skiplib=False, extra_objects=None):
         """
         Compiles a Python extension as an interface for the Fortran module
         """
@@ -104,12 +104,22 @@ class FortranLibrary:
 
         ffi.cdef(structdef+self.csource)
 
-        ffi.set_source('_'+self.name,
-                       structdef+self.csource,
-                       libraries=[self.name],
-                       library_dirs=['.', self.libpath],
-                       extra_compile_args=extraargs,
-                       extra_link_args=extralinkargs)
+        if skiplib:
+            if extra_objects is None:
+                raise RuntimeError('Need extra_objects if skiplib=True')
+            ffi.set_source('_'+self.name,
+                           structdef+self.csource,
+                           extra_compile_args=extraargs,
+                           extra_link_args=extralinkargs,
+                           extra_objects=extra_objects)
+        else:
+            ffi.set_source('_'+self.name,
+                           structdef+self.csource,
+                           libraries=[self.name],
+                           library_dirs=['.', self.libpath],
+                           extra_compile_args=extraargs,
+                           extra_link_args=extralinkargs,
+                           extra_objects=extra_objects)
 
         debug('Compilation starting')
         ffi.compile(tmpdir, verbose, target, debugflag)
@@ -192,7 +202,8 @@ class FortranModule:
     def __getattr__(self, attr):
         if ('methods' in self.__dict__) and (attr in self.methods):
             def method(*args):
-                return self.__call_fortran(attr, *args)
+                return call_fortran(self.lib._ffi, self.lib._lib,
+                                    attr, self.lib.compiler, self.name, *args)
             return method
         if ('variables' in self.__dict__) and (attr in self.variables):
             return self.__get_var_fortran(attr)
@@ -212,40 +223,6 @@ class FortranModule:
             setattr(self.lib._lib, varname, value)
         else:
             super(FortranModule, self).__setattr__(attr, value)
-
-    def __call_fortran(self, function, *args):
-        """
-        Calls a Fortran module routine based on its name
-        """
-        # TODO: scalars should be able to be either mutable 0d numpy arrays
-        # for in/out, or immutable Python types for pure input
-        # TODO: should be able to cast variables e.g. int/float if needed
-        cargs = []
-        cextraargs = []
-        for arg in args:
-            if isinstance(arg, str):
-                cargs.append(self._ffi.new("char[]", arg.encode('ascii')))
-                cextraargs.append(len(arg))
-            if isinstance(arg, int):
-                cargs.append(self.lib._ffi.new('int32_t*', arg))
-            elif isinstance(arg, float):
-                cargs.append(self.lib._ffi.new('double*', arg))
-            elif isinstance(arg, np.ndarray):
-                cargs.append(numpy2fortran(self.lib._ffi, arg,
-                                           self.lib.compiler))
-            else:  # TODO: add more basic types
-                cargs.append(arg)
-        if self.lib.compiler['name'] == 'gfortran':
-            funcname = '__'+self.name+'_MOD_'+function
-        elif self.lib.compiler['name'] == 'ifort':
-            funcname = self.name+'_mp_'+function+'_'
-        else:
-            raise NotImplementedError(
-                '''Compiler {} not supported. Use gfortran or ifort
-                '''.format(self.lib.compiler))
-        func = getattr(self.lib._lib, funcname)
-        debug('Calling {}({})'.format(funcname, cargs))
-        func(*(cargs + cextraargs))
 
     def __get_var_fortran(self, var):
         """

@@ -9,7 +9,6 @@ from .common import libext, debug
 from .parser import parse
 
 
-
 def arraydims(compiler):
     if compiler['name'] == 'gfortran':
         if compiler['version'] >= 8:
@@ -198,7 +197,6 @@ def c_declaration(var):
     return (ctype + '*'), var.name.lower()
 
 
-
 def fortran2numpy(ffi, data):
     # See https://gist.github.com/yig/77667e676163bbfc6c44af02657618a6
     # TODO: add support for more types than real(8) and also assumed size
@@ -251,7 +249,7 @@ def numpy2fortran(ffi, arr, compiler):
             distance = distance*arr.shape[kd]
 
     return arrdata
-    
+
 
 def fdef(fsource, module=True):
     ast = parse(fsource)
@@ -276,11 +274,11 @@ def fdef(fsource, module=True):
         for var in ast.namespace.values():
             ctype, cdecl = c_declaration(var)
             csource += 'extern {} {{mod}}_{}{{suffix}};\n'.format(ctype, cdecl)
- 
+
     return csource
 
 
-def call_fortran(ffi, lib, function, compiler, *args):
+def call_fortran(ffi, lib, function, compiler, module, *args):
     """
     Calls a Fortran routine based on its name
     """
@@ -301,12 +299,18 @@ def call_fortran(ffi, lib, function, compiler, *args):
             cargs.append(numpy2fortran(ffi, arg, compiler))
         else:  # TODO: add more basic types
             cargs.append(arg)
-    if compiler['name'] in ['gfortran', 'ifort']:
+
+    if module is None:
         funcname = function + '_'
     else:
-        raise NotImplementedError(
-            '''Compiler {} not supported. Use gfortran or ifort
-            '''.format(compiler))
+        if compiler['name'] == 'gfortran':
+            funcname = '__'+module+'_MOD_'+function
+        elif compiler['name'] == 'ifort':
+            funcname = module+'_mp_'+function+'_'
+        else:
+            raise NotImplementedError(
+                '''Compiler {} not supported. Use gfortran or ifort
+                '''.format(compiler))
     func = getattr(lib, funcname)
     debug('Calling {}({})'.format(funcname, cargs))
     func(*(cargs + cextraargs))
@@ -322,6 +326,5 @@ class FortranWrapper:
     def compile(self, tmpdir='.', verbose=0, debugflag=None):
         self.ffi.compile(tmpdir, verbose, self.target, debugflag)
 
-    def load():
+    def load(self):
         pass
-
