@@ -11,7 +11,7 @@ from shutil import copy
 
 import pytest
 import numpy as np
-from fffi import fortran_library, fortran_module
+from fffi import FortranLibrary, FortranModule
 
 
 @pytest.fixture(scope='module')
@@ -30,8 +30,8 @@ def setup(tmp):
     os.chdir(tmp)
     os.system('make')
 
-    lib = fortran_library('pseudoclass', path=tmp)
-    classmod = fortran_module(lib, 'class_circle')
+    lib = FortranLibrary('pseudoclass', path=tmp)
+    classmod = FortranModule(lib, 'class_circle')
 
     classmod.fdef("""
     type Circle
@@ -48,12 +48,12 @@ def setup(tmp):
 
 @pytest.fixture(scope="module")
 def lib(tmp):
-    return fortran_library('pseudoclass', path=tmp)
+    return FortranLibrary('pseudoclass', path=tmp)
 
 
 @pytest.fixture(scope="module")
 def classmod(lib):
-    fortmod = fortran_module(lib, 'class_circle')
+    fortmod = FortranModule(lib, 'class_circle')
     fortmod.load()
     return fortmod
 

@@ -20,10 +20,10 @@ libuq = ffi.dlopen('/home/calbert/code/uqp/libuq.so')
 #libuq = ffi.dlopen('/Users/ert/code/uqp/libuq.so')
 
 #%%
-from fffi import fortran_module, fdef, f2003_parser, debug
+from fffi import FortranModule, fdef, f2003_parser, debug
 from fparser.common.readfortran import FortranStringReader
 
-mod_index = fortran_module(libuq, 'mod_index')
+mod_index = FortranModule(libuq, 'mod_index')
 
 code = """
 subroutine test(nfterme, npterme, np, mmax)

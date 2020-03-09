@@ -5,10 +5,10 @@ Created: Thu Jul 25 12:29:27 2019
 
 # %% Import, compile and load
 from numpy import array, linspace
-from fffi import fortran_library, fortran_module
+from fffi import FortranLibrary, FortranModule
 
-libfortmod = fortran_library('fortmod')
-fortmod = fortran_module(libfortmod, 'fortmod')
+libfortmod = FortranLibrary('fortmod')
+fortmod = FortranModule(libfortmod, 'fortmod')
 
 # member variable and subroutine definition stub
 # TODO: parse fortmod.f90 automatically and strip away implementation

@@ -14,7 +14,7 @@ from shutil import copy
 
 import pytest
 import numpy as np
-from fffi import fortran_module
+from fffi import FortranModule
 
 m = 3
 n = 2
@@ -63,7 +63,7 @@ def mod_arrays(tmp):
     os.chdir(tmp)
     os.system('make')
 
-    fort_mod = fortran_module('test_arrays', 'mod_arrays', path=tmp)
+    fort_mod = FortranModule('test_arrays', 'mod_arrays', path=tmp)
 
     fort_mod.fdef("""
         subroutine test_vector(vec)
@@ -78,7 +78,7 @@ def mod_arrays(tmp):
     fort_mod.compile()
 
     # recreate module to check if it works independently now
-    fort_mod = fortran_module('test_arrays', 'mod_arrays', path=tmp)
+    fort_mod = FortranModule('test_arrays', 'mod_arrays', path=tmp)
     fort_mod.load()
     return fort_mod
 
@@ -148,4 +148,4 @@ def test_array_2d_multi(mod_arrays, refarr):
     snapshot2 = tracemalloc.take_snapshot()
 
     stats = snapshot2.compare_to(snapshot1, 'filename')
-    assert sum(stat.count_diff for stat in stats) <= statsum
+    assert sum(stat.count_diff for stat in stats) <= statsum + 16

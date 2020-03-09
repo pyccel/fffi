@@ -1,7 +1,7 @@
-from fffi import fortran_library, fortran_module
+from fffi import FortranLibrary, FortranModule
 
-lib = fortran_library('pseudoclass')
-classmod = fortran_module(lib, 'class_circle')
+lib = FortranLibrary('pseudoclass')
+classmod = FortranModule(lib, 'class_circle')
 
 classmod.fdef("""
 type Circle

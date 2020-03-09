@@ -7,7 +7,7 @@ Compiles CFF for test_arrays
 
 import os
 from shutil import copy
-from fffi import fortran_module
+from fffi import FortranModule
 
 def test_compile(tmp_path):
     cwd = os.path.dirname(__file__)
@@ -22,7 +22,7 @@ def test_compile(tmp_path):
     os.system('make')
 
     # Initialize
-    mod_arrays = fortran_module('test_arrays', 'mod_arrays', path=tmp_path)
+    mod_arrays = FortranModule('test_arrays', 'mod_arrays', path=tmp_path)
 
     # This will use fortran_module.fdef instead of cdef in the future.
     # Ideally, the actual Fortran source file would be parsed as an

@@ -12,11 +12,11 @@ import numpy as np
 libpath = '/home/calbert/code/uqp/libuq.so'
 lib = CDLL(libpath)
 #%%
-from fffi import fortran_module
+from fffi import FortranModule
 
 modname = 'mod_index'
 
-mod_index = fortran_module(lib, 'mod_index')
+mod_index = FortranModule(lib, 'mod_index')
 
 
 npoly = c_int(3)

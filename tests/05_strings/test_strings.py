@@ -8,7 +8,7 @@ import subprocess
 from shutil import copy
 
 import pytest
-from fffi import fortran_library
+from fffi import FortranLibrary
 
 m = 3
 n = 2
@@ -34,7 +34,7 @@ def lib(tmp):
     os.chdir(tmp)
     os.system('make')
 
-    fort_lib = fortran_library('test_strings', path=tmp)
+    fort_lib = FortranLibrary('test_strings', path=tmp)
 
     fort_lib.fdef("""
         subroutine test_string(s)

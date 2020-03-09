@@ -1,7 +1,7 @@
 import os
 import pytest
 from shutil import copy
-from fffi import fortran_module
+from fffi import FortranModule
 
 dtypes = ['logical', 'integer', 'real', 'complex']
 
@@ -17,7 +17,7 @@ def fort_mod(tmp_path, cwd):
     copy(os.path.join(cwd, 'Makefile'), tmp_path)
     os.chdir(tmp_path)
     os.system('make')
-    return fortran_module('test_parser', 'test_parser_mod', path=tmp_path)
+    return FortranModule('test_parser', 'test_parser_mod', path=tmp_path)
 
 
 def test_full(fort_mod):

@@ -1,7 +1,7 @@
-from fffi import fortran_library
+from fffi import FortranLibrary
 from cffi import FFI
 
-lib = fortran_library('test_strings')
+lib = FortranLibrary('test_strings')
 lib.fdef("""
     subroutine test0
     end subroutine test0
