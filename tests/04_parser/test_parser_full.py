@@ -38,7 +38,7 @@ module driftorbit
   save
 
   integer :: nvar
-end
+end module
 
     """)
     # assert fort_mod.csource
