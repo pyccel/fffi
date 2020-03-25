@@ -15,4 +15,4 @@ script:
 - coverage run -m pytest
 - coverage xml -o cobertura.xml
 after_success:
-- ./codacy-coverage-reporter
+- ./codacy-coverage-reporter -r cobertura.xml
