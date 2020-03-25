@@ -50,7 +50,7 @@ def test_module(fort_mod):
     end module mod_test
     """)
 
-    
+
 def test_module_end(fort_mod):
     fort_mod.fdef("""\
     module mod_test
