@@ -26,7 +26,7 @@ def test_module(fort_mod):
         subroutine test(x)
             real :: x
             x = 1.
-        end subroutine
+        end subroutine test
 
         subroutine test2(x)
             real :: x
@@ -36,25 +36,57 @@ def test_module(fort_mod):
         subroutine test3(x)
             real :: x
             x = 1.
-        end subroutine
+        end
 
         subroutine test4(x)
             real :: x
             x = 1.
-        end subroutine
+        end subroutine test4
 
         subroutine test5(x)
             real :: x
             x = 1.
-        end subroutine
+        end
     end module mod_test
+    """)
+
+    
+def test_module_end(fort_mod):
+    fort_mod.fdef("""\
+    module mod_test
+        contains
+        subroutine test(x)
+            real :: x
+            x = 1.
+        end
+
+        subroutine test2(x)
+            real :: x
+            x = 1.
+        end
+
+        subroutine test3(x)
+            real :: x
+            x = 1.
+        end
+
+        subroutine test4(x)
+            real :: x
+            x = 1.
+        end
+
+        subroutine test5(x)
+            real :: x
+            x = 1.
+        end
+    end
     """)
 
 def test_subroutine(fort_mod):
     fort_mod.fdef("""\
         subroutine test(x)
             real :: x
-        end subroutine
+        end subroutine test
 
         subroutine test2(x)
             real :: x
@@ -62,15 +94,15 @@ def test_subroutine(fort_mod):
 
         subroutine test3(x)
             real :: x
-        end subroutine
+        end
 
         subroutine test4(x)
             real :: x
-        end subroutine
+        end subroutine test4
 
         subroutine test5(x)
             real :: x
-        end subroutine
+        end
     """)
     assert fort_mod.csource
 
