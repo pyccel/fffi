@@ -19,7 +19,7 @@ from .common import libext, debug, warn
 from .parser import parse
 from .fortran_wrapper import (
     arraydescr, arraydims, c_declaration, call_fortran,
-    numpy2fortran, fortran2numpy, fdef
+    numpy2fortran, fortran2numpy, ccodegen
 )
 
 
@@ -161,7 +161,8 @@ class FortranLibrary:
         debug('C signatures are\n' + self.csource)
 
     def fdef(self, fsource):
-        csource = fdef(fsource, module=False)
+        ast = parse(fsource)
+        csource = ccodegen(ast, module=False)
         self.cdef(csource)
 
     def new(self, typename, value=None):
@@ -264,8 +265,8 @@ class FortranModule:
         self.lib.csource = self.lib.csource + self.csource
 
     def fdef(self, fsource):
-        csource = fdef(fsource, module=True)
-
+        ast = parse(fsource)
+        csource = ccodegen(ast, module=True)
         self.cdef(csource)
 
     def load(self):

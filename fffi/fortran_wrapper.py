@@ -109,7 +109,43 @@ ctypemap = {
 }
 
 
-def ccodegen(subprogram, module=True):
+def ccodegen(ast, module):
+    """Generates C signature for Fortran subprogram.
+
+    Parameters:
+        ast: AST containing Fortran types, variables, subroutines and/or functions.
+        module (bool): True if code is part of a module, False otherwise.
+
+    Returns:
+        str: C code for the according signature for type definitions and
+             declaration of variables and functions.
+
+    """
+    csource = ''
+    for typename, typedef in ast.types.items():  # types
+        debug('Adding type {}'.format(typename))
+        csource += 'struct {} {{{{\n'.format(typename)
+        for decl in typedef.declarations:
+            for var in decl.namespace.values():
+                ctype, cdecl = c_declaration(var)
+                debug('{} {}'.format(ctype, cdecl))
+                csource += '{} {};\n'.format(ctype, cdecl)
+        csource += '}};\n'
+
+    for subname, subp in ast.subprograms.items():  # subprograms
+        debug('Adding subprogram {}({})'.format(
+            subname, ', '.join(subp.args)))
+        csource += ccodegen_sub(subp, module)
+
+    if module:  # module variables
+        for var in ast.namespace.values():
+            ctype, cdecl = c_declaration(var)
+            csource += 'extern {} {{mod}}_{}{{suffix}};\n'.format(ctype, cdecl)
+
+    return csource
+
+
+def ccodegen_sub(subprogram, module=True):
     """Generates C function signature for Fortran subprogram.
 
     Parameters:
@@ -249,33 +285,6 @@ def numpy2fortran(ffi, arr, compiler):
             distance = distance*arr.shape[kd]
 
     return arrdata
-
-
-def fdef(fsource, module=True):
-    ast = parse(fsource)
-
-    csource = ''
-    for typename, typedef in ast.types.items():  # types
-        debug('Adding type {}'.format(typename))
-        csource += 'struct {} {{{{\n'.format(typename)
-        for decl in typedef.declarations:
-            for var in decl.namespace.values():
-                ctype, cdecl = c_declaration(var)
-                debug('{} {}'.format(ctype, cdecl))
-                csource += '{} {};\n'.format(ctype, cdecl)
-        csource += '}};\n'
-
-    for subname, subp in ast.subprograms.items():  # subprograms
-        debug('Adding subprogram {}({})'.format(
-            subname, ', '.join(subp.args)))
-        csource += ccodegen(subp, module)
-
-    if module:  # module variables
-        for var in ast.namespace.values():
-            ctype, cdecl = c_declaration(var)
-            csource += 'extern {} {{mod}}_{}{{suffix}};\n'.format(ctype, cdecl)
-
-    return csource
 
 
 def call_fortran(ffi, lib, function, compiler, module, *args):
