@@ -13,12 +13,11 @@ import subprocess
 from pathlib import Path
 
 from cffi import FFI
-import numpy as np
 
 from .common import libext, debug, warn
 from .parser import parse
 from .fortran_wrapper import (
-    arraydescr, arraydims, c_declaration, call_fortran,
+    arraydescr, arraydims, call_fortran,
     numpy2fortran, fortran2numpy, ccodegen
 )
 

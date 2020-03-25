@@ -6,7 +6,6 @@ import numpy as np
 
 from cffi import FFI
 from .common import libext, debug
-from .parser import parse
 
 
 def arraydims(compiler):
