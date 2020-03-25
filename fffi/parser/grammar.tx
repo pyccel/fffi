@@ -18,7 +18,7 @@ Module:
   declarations*=Declaration
   ( 'CONTAINS'
     subprograms*=InternalSubprogram ) ?
-  'END' 'MODULE' (ID)?
+  ModuleEnding
 ;
 
 // R211
@@ -52,9 +52,19 @@ Suffix:
 ;
 
 // R1230, R1234
-// TODO: make END SUBROUTINE name work
 SubProgramEnding:
-    end = 'END' 'SUBROUTINE'|'FUNCTION'
+    end = 'END SUBROUTINE 'ID
+    | 'END FUNCTION 'ID
+    | 'END SUBROUTINE'
+    | 'END FUNCTION'
+    | 'END'
+;
+
+// R1104
+ModuleEnding:
+    end = 'END MODULE 'ID
+    | 'END MODULE'
+    | 'END'
 ;
 
 // R207, R501
