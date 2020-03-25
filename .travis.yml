@@ -4,11 +4,13 @@ python:
 - '3.7'
 - '3.8'
 before_install:
-- sudo apt-get -y install gfortran
+- sudo apt-get -y install gfortran jq
+- curl -LSs "$(curl -LSs https://api.github.com/repos/codacy/codacy-coverage-reporter/releases/latest | jq -r '.assets | map({name, browser_download_url} | select(.name | endswith(".jar"))) | .[0].browser_download_url')" -o codacy-coverage-reporter-assembly.jar
 install:
 - pip install -r requirements.txt
 - pip install coverage
 script:
 - coverage run -m pytest
 - coverage xml -o cobertura.xml
-- bash <(wget -q -O - https://coverage.codacy.com/get.sh) 
+after_success:
+- java -jar codacy-coverage-reporter-assembly.jar report -l Java -r build/reports/jacoco/test/jacocoTestReport.xml
