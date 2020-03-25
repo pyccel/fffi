@@ -13,6 +13,6 @@ install:
 - pip install coverage
 script:
 - coverage run -m pytest
-- coverage xml -o cobertura.xml
 after_success:
+- coverage xml -o cobertura.xml
 - ./codacy-coverage-reporter -r cobertura.xml
