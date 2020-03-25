@@ -3,11 +3,11 @@ Fortran:
 ;
 
 Statement: 
-    Module
-  | InternalSubprogram
+  InternalSubprogram
   | Declaration
   | DerivedTypeDefinition
   | Comment
+  | Module
 ;
 
 // R1104
@@ -18,7 +18,7 @@ Module:
   declarations*=Declaration
   ( 'CONTAINS'
     subprograms*=InternalSubprogram ) ?
-  'END' // TODO ( 'MODULE' (ID)? )?
+  ModuleEnding
 ;
 
 // R211
@@ -26,11 +26,10 @@ Module:
 InternalSubprogram:
   heading=SubProgramHeading
   SpecificationPart
-  declarations*=Declaration
-  // execution_part=/(!END)*/
-  ending=SubProgramEnding 
+  statements*=Body
+  SubProgramEnding
 ;
-
+Body: Declaration|Stmt;
 // R1224, R1225
 SubProgramHeading:
     ( (Prefix)? DeclarationType 'FUNCTION' 
@@ -53,13 +52,19 @@ Suffix:
 ;
 
 // R1230, R1234
-// TODO: make END SUBROUTINE name work
 SubProgramEnding:
-  'END SUBROUTINE 'ID
-  | 'END FUNCTION 'ID
-  | 'END SUBROUTINE'
-  | 'END FUNCTION'
-  | 'END'
+    end = 'END SUBROUTINE 'ID
+    | 'END FUNCTION 'ID
+    | 'END SUBROUTINE'
+    | 'END FUNCTION'
+    | 'END'
+;
+
+// R1104
+ModuleEnding:
+    end = 'END MODULE 'ID
+    | 'END MODULE'
+    | 'END'
 ;
 
 // R207, R501
@@ -101,12 +106,12 @@ DeclarationEntity: DeclarationEntityObject | DeclarationEntityFunction;
 
 // R504
 DeclarationEntityObject:
-    name=ID ('(' arrayspec=ArraySpec ')')? // TODO add the remaining attributes
+    name=ID ('(' arrayspec=ArraySpec ')')? ('=' /.*$/)? // TODO add the remaining attributes
 ;
 
 // R504
 DeclarationEntityFunction:
-    name=ID (STAR charlen=INT)?
+    name=ID (STAR charlen=INT)? ('=' /.*$/)?
 ;
 
 // R509
@@ -167,7 +172,7 @@ SpecificationPart:
 Comment:
     '!'/.*$/
 ;
-
+Stmt:  !(SubProgramEnding) name=/.*$/;
 DEF:         "::";
 COMMA:       ",";
 STAR:       "*";

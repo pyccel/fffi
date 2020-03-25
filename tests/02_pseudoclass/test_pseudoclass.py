@@ -40,7 +40,7 @@ def setup(tmp):
 
     subroutine circle_print(self)
     type(Circle), intent(in) :: self
-    end
+    end subroutine
     """)
 
     lib.compile()

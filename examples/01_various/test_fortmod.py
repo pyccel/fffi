@@ -12,32 +12,14 @@ fortmod = FortranModule(libfortmod, 'fortmod')
 
 # member variable and subroutine definition stub
 # TODO: parse fortmod.f90 automatically and strip away implementation
-fortmod.fdef("""
-   double precision :: member
-   double precision, dimension(3) :: member_array
-   
-   subroutine modify_vector(z, k)
-     double precision, dimension(:), intent(inout) :: z
-     integer, intent(in) :: k
-   end
-   
-   subroutine modify_matrix(A, x)
-     double precision, dimension(:,:), intent(inout) :: A
-     double precision, intent(in) :: x
-   end
-   
-   subroutine init()
-   end
-   
-   subroutine side_effects()
-   end 
-""")
+with open('fortmod.f90', 'r') as f:
+    code = f.read()
+fortmod.fdef(code)
 
 libfortmod.compile()  # only required when Fortran library has changed
 fortmod.load()
 
 # %% Try some stuff
-
 print('Before init(): member = {}'.format(fortmod.member))
 fortmod.init()
 print('After init(): member = {}'.format(fortmod.member))

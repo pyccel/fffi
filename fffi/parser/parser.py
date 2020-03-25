@@ -29,6 +29,7 @@ class Variable():
                  cls_parameters=None,
                  order='C',
                  precision=0):
+
         self.dtype = dtype
         self.name = name
         self.rank = rank
@@ -74,6 +75,8 @@ class Fortran(object):
         for stmt in self.statements:
             if isinstance(stmt, Module):
                 self.modules[stmt.name] = stmt
+                self.subprograms.update({sub.name:sub for sub in stmt.subprograms})
+                self.namespace.update(stmt.namespace)
             elif isinstance(stmt, InternalSubprogram):
                 self.subprograms[stmt.name] = stmt
             elif isinstance(stmt, Declaration):
@@ -103,9 +106,8 @@ class InternalSubprogram(object):
 
     def __init__(self, **kwargs):
         self.heading = kwargs.pop('heading')
-        self.declarations = kwargs.pop('declarations', [])  # optional
-        self.ending = kwargs.pop('ending')
-
+        self.statements = kwargs.pop('statements', [])  # optional
+        self.declarations = [stmt for stmt in self.statements if isinstance(stmt, Declaration)]
         self.name = self.heading.name
         self.args = self.heading.arguments
         self.namespace = {}
@@ -126,7 +128,7 @@ class SubprogramEnding(object):
     """Class representing a Fortran internal subprogram."""
 
     def __init__(self, **kwargs):
-        self.name = kwargs.pop('name')
+        self.end = kwargs.pop('name')
 
 
 class InternalSubprogramHeading(object):
@@ -136,6 +138,9 @@ class InternalSubprogramHeading(object):
         self.heading = kwargs.pop('heading')
         self.ending = kwargs.pop('ending')
 
+class Stmt(object):
+    def __init__(self, **kwargs):
+        self.name = kwargs.pop('name')
 
 class Declaration(object):
     """Class representing a Fortran declaration."""
@@ -171,7 +176,9 @@ class Declaration(object):
                 d_infos = value.expr
                 shape = d_infos['shape']
                 rank = len(shape)
-
+            elif key == 'parameter':
+                #we don't add a parameter to the namespace
+                return
             attributes.append(key)
 
         is_allocatable = ('allocatable' in attributes)
@@ -308,7 +315,9 @@ def parse(inputs, debug=False):
     classes = [Fortran,
                Module,
                InternalSubprogram,
+               SubprogramHeading,
                Declaration,
+               Stmt,
                DeclarationAttribute,
                DeclarationEntityObject,
                DeclarationEntityFunction,

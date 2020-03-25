@@ -10,7 +10,7 @@ module fortmod
    double precision, dimension(3) :: member_array
     
    ! TODO: allow handling of assumed size module members
-   double precision, allocatable, dimension(:) :: alloc_member
+   !double precision, allocatable, dimension(:) :: alloc_member
 
 contains
    
@@ -19,7 +19,7 @@ contains
      integer, intent(in) :: k
      
      z = sin(k*twopi*z)
-   end subroutine modify_vector
+   end subroutine
    
    
    subroutine modify_matrix(A, x)
@@ -27,16 +27,16 @@ contains
      double precision, intent(in) :: x
      
      A = x*transpose(A)
-   end subroutine modify_matrix
+   end subroutine
    
    subroutine init()
      member = 1.0
      member_array = 1.0
-   end subroutine init
+   end subroutine
    
    subroutine side_effects()
      member = member + 1.0
      member_array = 2.0*member_array
-   end subroutine side_effects
+   end subroutine
    
 end module fortmod
