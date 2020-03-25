@@ -68,11 +68,11 @@ def mod_arrays(tmp):
     fort_mod.fdef("""
         subroutine test_vector(vec)
         double precision, dimension(:) :: vec
-        end
+        end subroutine
 
         subroutine test_array_2d(arr)
         double precision, dimension(:,:) :: arr
-        end
+        end subroutine
         """)
 
     fort_mod.compile()
