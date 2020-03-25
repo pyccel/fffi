@@ -5,7 +5,8 @@ python:
 - '3.8'
 before_install:
 - sudo apt-get -y install gfortran jq
-- curl -LSs "$(curl -LSs https://api.github.com/repos/codacy/codacy-coverage-reporter/releases/latest | jq -r '.assets | map({name, browser_download_url} | select(.name | endswith(".jar"))) | .[0].browser_download_url')" -o codacy-coverage-reporter-assembly.jar
+- LATEST_VERSION="$(wget -q -O - https://api.bintray.com/packages/codacy/Binaries/codacy-coverage-reporter/versions/_latest | jq -r .name)"
+- wget -O codacy-coverage-reporter-assembly.jar "https://dl.bintray.com/codacy/Binaries/${LATEST_VERSION}/codacy-coverage-reporter-assembly.jar"
 install:
 - pip install -r requirements.txt
 - pip install coverage
