@@ -19,12 +19,42 @@ def fort_mod(tmp_path, cwd):
     os.system('make')
     return FortranModule('test_parser', 'test_parser_mod', path=tmp_path)
 
+def test_module(fort_mod):
+    fort_mod.fdef("""\
+    module mod_test
+        contains
+        subroutine test(x)
+            real :: x
+            x = 1.
+        end subroutine
+
+        subroutine test2(x)
+            real :: x
+            x = 1.
+        end subroutine
+
+        subroutine test3(x)
+            real :: x
+            x = 1.
+        end subroutine
+
+        subroutine test4(x)
+            real :: x
+            x = 1.
+        end subroutine
+
+        subroutine test5(x)
+            real :: x
+            x = 1.
+        end subroutine
+    end module mod_test
+    """)
 
 def test_subroutine(fort_mod):
     fort_mod.fdef("""\
         subroutine test(x)
             real :: x
-        end
+        end subroutine
 
         subroutine test2(x)
             real :: x
@@ -32,7 +62,7 @@ def test_subroutine(fort_mod):
 
         subroutine test3(x)
             real :: x
-        end subroutine test4
+        end subroutine
 
         subroutine test4(x)
             real :: x
@@ -40,7 +70,7 @@ def test_subroutine(fort_mod):
 
         subroutine test5(x)
             real :: x
-        end
+        end subroutine
     """)
     assert fort_mod.csource
 
@@ -50,7 +80,7 @@ def test_scalar_types(fort_mod):
         fort_mod.fdef("""\
             subroutine test_{0}(x)
                 {0} :: x
-            end
+            end subroutine
             """.format(dtype))
 
     assert fort_mod.csource
@@ -61,7 +91,7 @@ def test_scalar_types_kind(fort_mod):
         fort_mod.fdef("""\
             subroutine test_{0}(x)
                 {0}(4) :: x
-            end
+            end subroutine
             """.format(dtype))
 
     assert fort_mod.csource
@@ -72,7 +102,7 @@ def test_scalar_types_kind(fort_mod):
             fort_mod.fdef("""\
                 subroutine test_{0}(x)
                     {0}(8) :: x
-                end
+                end subroutine
                 """.format(dtype))
 
 
@@ -82,7 +112,7 @@ def test_array_types(fort_mod):
             subroutine test_logical(x, y, z)
                 {0} :: x(:)
                 {0}, dimension(:) :: y, z
-            end
+            end subroutine
             """.format(dtype))
 
     assert fort_mod.csource
@@ -104,7 +134,7 @@ def test_use(fort_mod):
     fort_mod.fdef("""\
         subroutine a
             use mod_tets
-        end subroutine a
+        end subroutine
         """)
 
     assert fort_mod.csource
