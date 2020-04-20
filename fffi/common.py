@@ -7,11 +7,11 @@ LOG_DEBUG = False
 
 
 if 'linux' in sys.platform:
-    libext = '.so'
+    libexts = ['.so']
 elif 'darwin' in sys.platform:
-    libext = '.so'
+    libexts = ['.so', '.dylib']
 elif 'win' in sys.platform:
-    libext = '.dll'
+    libexts = ['.pyd', '.dll', '.so']
 
 
 def warn(output):

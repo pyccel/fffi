@@ -14,7 +14,7 @@ from pathlib import Path
 
 from cffi import FFI
 
-from .common import libext, debug, warn
+from .common import libexts, debug, warn
 from .parser import parse
 from .fortran_wrapper import (
     arraydescr, arraydims, call_fortran,
@@ -41,9 +41,22 @@ class FortranLibrary:
         else:
             self.libpath = '.'
 
+        libfile = None
+        for libext in libexts:
+            libfile = os.path.join(self.libpath, 'lib'+name+libext)
+            print(libfile)
+            if os.path.exists(libfile):
+                break
+            else:
+                libfile = None
+            
+        if libfile is None:
+            raise RuntimeError(
+                f'Cannot find library {name} with extensions {libexts}')
+
         if self.compiler is None:
             libstrings = subprocess.check_output(
-                ['strings', os.path.join(self.libpath, 'lib'+name+libext)]
+                ['strings', libfile]
             )
             libstrings = libstrings.decode('utf-8').split('\n')
             for line in libstrings:
@@ -92,9 +105,9 @@ class FortranLibrary:
             extralinkargs.append('-lgfortran')
 
         if self.path:
-            target = os.path.join(self.path, '_'+self.name+libext)
+            target = os.path.join(self.path, '_'+self.name+libexts[0])
         else:
-            target = './_'+self.name+libext
+            target = './_'+self.name+libexts[0]
 
         structdef = arraydims(self.compiler)
         descr = arraydescr(self.compiler)

@@ -5,7 +5,7 @@ Generate Python wrapper for given object files in Fortran
 import numpy as np
 
 from cffi import FFI
-from .common import libext, debug
+from .common import libexts, debug
 
 
 def arraydims(compiler):
@@ -327,7 +327,7 @@ def call_fortran(ffi, lib, function, compiler, module, *args):
 class FortranWrapper:
     def __init__(self, name, csource, extra_objects):
         self.name = name
-        self.target = './_' + self.name + libext
+        self.target = './_' + self.name + libexts[0]
         self.ffi = FFI()
         self.ffi.set_source(name, csource, extra_objects=extra_objects)
 
