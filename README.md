@@ -18,8 +18,8 @@ basic usage using CFFI (fast) API mode with a shared library
 `libtest_arrays.so` containing a module `mod_arrays`:
 1. Import fffi and initialize `fortran_module` object `mod_arrays`
 ```python
-from fffi import fortran_module
-mod_arrays = fortran_module('test_arrays', 'mod_arrays')
+from fffi import FortranModule
+mod_arrays = FortranModule('test_arrays', 'mod_arrays')
 ```
 
 2. Define and generate Python extension
