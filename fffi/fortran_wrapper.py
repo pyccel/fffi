@@ -254,9 +254,7 @@ def fortran2numpy(ffi, var):
             ctype = ctypemap[(dtype, var.dtype.len)]
         
         size = var.dtype.len*var.dim[0].extent # TODO: support >1D
-        print(f'ptr: {ptr}, size: {size}')
         dtype = var.dtype.type
-        print(f'dtype: {dtype}')
     else:
         raise NotImplementedError(f'''
         Array of kind {vartype.kind} not supported.
