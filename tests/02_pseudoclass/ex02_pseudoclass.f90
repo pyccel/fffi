@@ -1,12 +1,13 @@
 module class_Circle
   implicit none
   private
-  public :: Circle, circle_area, circle_print
+  public :: Circle, circle_area, circle_print, circle_alloc_member
 
   real(8) :: pi = 3.1415926535897931d0 ! Class-wide private constant
 
   type Circle
      real(8) :: radius
+     complex(8), dimension(:), allocatable :: alloc_array
   end type Circle
 contains
   function circle_area(self) result(area)
@@ -21,6 +22,14 @@ contains
     area = circle_area(self)  ! Call the circle_area function
     print *, 'Circle: r = ', self%radius, ' area = ', area
   end subroutine circle_print
+
+
+  subroutine circle_alloc_member(self)
+    type(Circle), intent(inout) :: self
+    allocate(self%alloc_array(5)) 
+    self%alloc_array = (1d0, 2d0)
+  end subroutine
+   
 end module class_Circle
 
 program circle_test
