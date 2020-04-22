@@ -10,13 +10,13 @@ from .common import libexts, debug
 
 def arraydims(compiler):
     if compiler['name'] == 'gfortran':
-        if compiler['version'] >= 8:
+        if compiler['version'] >= 8:  # TODO: check versions
             return """
               typedef struct array_dims array_dims;
               struct array_dims {
                 ptrdiff_t stride;
                 ptrdiff_t lower_bound;
-                ptrdiff_t upper_bound;
+                ptrdiff_t extent;
               };
 
               typedef struct datatype datatype;
@@ -107,6 +107,13 @@ ctypemap = {
     ('logical', 4): '_Bool'
 }
 
+# Map for GCC datatypes
+dtypemap = {
+    1: 'integer',
+    2: 'logical',
+    3: 'real',
+    4: 'complex'
+}
 
 def ccodegen(ast, module):
     """Generates C signature for Fortran subprogram.
@@ -209,13 +216,10 @@ def c_declaration(var):
         debug('Adding scalar {} ({})'.format(var.name, ctype))
         return ctype, var.name.lower()
 
-    if not var.shape:
-        # TODO: add support for assumed shape and/or allocatable arrays
-        # csource += 'extern struct array_{}d {{mod}}_{};\n'.format(var.rank, varname)
-        raise NotImplementedError('''
-            Declaration of assumed shape and/or allocatable arrays
-            not yet supported.
-            ''')
+    # Assumed size arrays
+
+    if var.shape is None or var.shape[0] is None or var.shape[0][1] is None:
+        return 'array_{}d'.format(var.rank), var.name.lower()
 
     # Fixed size arrays
 
@@ -224,19 +228,47 @@ def c_declaration(var):
         length = var.shape[0][1]
         return ctype, '{}[{}]'.format(var.name.lower(), length)
     if var.rank > 1:
-        raise NotImplementedError(
-            '''Fixed size arrays with rank > 1 not yet supported
+        raise NotImplementedError('''
+           Fixed size arrays with rank > 1 not yet supported
            as module variables''')
 
-    ctype = 'array_{}d'.format(var.rank)
-    return (ctype + '*'), var.name.lower()
 
 
-def fortran2numpy(ffi, data):
+def fortran2numpy(ffi, var):
     # See https://gist.github.com/yig/77667e676163bbfc6c44af02657618a6
     # TODO: add support for more types than real(8) and also assumed size
-    ptr = ffi.addressof(data)
-    return np.frombuffer(ffi.buffer(ptr, 8*len(data)), 'f8')
+
+    vartype = ffi.typeof(var)
+
+    # Fixed size array
+    if vartype.kind == 'array':  # fixed size
+        ctype = vartype.item.cname
+        ptr = ffi.addressof(var)
+        size = ffi.sizeof(var)
+    elif vartype.kind == 'struct':
+        ptr = var.base_addr
+        dtype = dtypemap[var.dtype.type]
+        if var.dtype.type == 4:  # complex has twice the bytes
+            ctype = ctypemap[(dtype, var.dtype.len/2)]
+        else:
+            ctype = ctypemap[(dtype, var.dtype.len)]
+        
+        size = var.dtype.len*var.dim[0].extent # TODO: support >1D
+        print(f'ptr: {ptr}, size: {size}')
+        dtype = var.dtype.type
+        print(f'dtype: {dtype}')
+    else:
+        raise NotImplementedError(f'''
+        Array of kind {vartype.kind} not supported.
+        ''')
+    
+    if ctype == 'double':
+        return np.frombuffer(ffi.buffer(ptr, size), 'f8')
+    elif ctype == 'double _Complex':
+        return np.frombuffer(ffi.buffer(ptr, size), 'c16')
+    raise NotImplementedError(f'''
+        Array of type {ctype} not supported.
+        ''')
 
 
 def numpy2fortran(ffi, arr, compiler):
@@ -268,7 +300,10 @@ def numpy2fortran(ffi, arr, compiler):
         for kd in range(ndims):
             arrdata.dim[kd].stride = stride
             arrdata.dim[kd].lower_bound = 1
-            arrdata.dim[kd].upper_bound = arr.shape[kd]
+            if compiler['version'] >= 8:
+                arrdata.dim[kd].extent = arr.shape[kd]
+            else:
+                arrdata.dim[kd].upper_bound = arr.shape[kd]
             stride = stride*arr.shape[kd]
     elif compiler['name'] == 'ifort':
         arrdata.elem_size = arr.dtype.itemsize

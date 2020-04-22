@@ -38,3 +38,11 @@ A = array([[1, 2], [3, 4]], order='F')
 print('Before modify_matrix(A, 1): z = {}'.format(A))
 fortmod.modify_matrix(A, 1.0)
 print('After modify_matrix(A, 1): z = {}'.format(A))
+
+print('Before allocating array')
+fortmod.alloc_member()
+print('After allocating array')
+
+print('Before accessing array')
+print(fortmod.alloc_array)
+print('After accessing array')
