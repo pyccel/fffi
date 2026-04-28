@@ -123,29 +123,34 @@ def test_array_2d_multi(mod_arrays, refarr):
     then 1000 times. Check for memory leaks via tracemalloc
     """
 
+    if tracemalloc.is_tracing():
+        tracemalloc.stop()
     tracemalloc.start()
-    snapshot1 = tracemalloc.take_snapshot()
-    arr = np.ones((m, n), order='F')  # correct array order
+    try:
+        snapshot1 = tracemalloc.take_snapshot()
+        arr = np.ones((m, n), order='F')  # correct array order
 
-    for _ in range(10):
-        arr[:, :] = 1.0
-        mod_arrays.test_array_2d(arr)
-        np.testing.assert_almost_equal(arr, refarr)
+        for _ in range(10):
+            arr[:, :] = 1.0
+            mod_arrays.test_array_2d(arr)
+            np.testing.assert_almost_equal(arr, refarr)
 
-    gc.collect()
-    snapshot2 = tracemalloc.take_snapshot()
+        gc.collect()
+        snapshot2 = tracemalloc.take_snapshot()
 
-    stats = snapshot2.compare_to(snapshot1, 'filename')
-    statsum = sum(stat.count_diff for stat in stats)
+        stats = snapshot2.compare_to(snapshot1, 'filename')
+        statsum = sum(stat.count_diff for stat in stats)
 
-    snapshot1 = tracemalloc.take_snapshot()
-    for _ in range(1000):
-        arr[:, :] = 1.0
-        mod_arrays.test_array_2d(arr)
-        np.testing.assert_almost_equal(arr, refarr)
+        snapshot1 = tracemalloc.take_snapshot()
+        for _ in range(1000):
+            arr[:, :] = 1.0
+            mod_arrays.test_array_2d(arr)
+            np.testing.assert_almost_equal(arr, refarr)
 
-    gc.collect()
-    snapshot2 = tracemalloc.take_snapshot()
+        gc.collect()
+        snapshot2 = tracemalloc.take_snapshot()
 
-    stats = snapshot2.compare_to(snapshot1, 'filename')
-    assert sum(stat.count_diff for stat in stats) <= statsum + 16
+        stats = snapshot2.compare_to(snapshot1, 'filename')
+        assert sum(stat.count_diff for stat in stats) <= statsum + 16
+    finally:
+        tracemalloc.stop()

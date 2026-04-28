@@ -3,9 +3,12 @@ Generate Python wrapper for given object files in Fortran
 """
 
 import numpy as np
+import weakref
 
 from cffi import FFI
 from .common import libexts, debug
+
+_NUMPY_DESCRIPTOR_CACHES = {}
 
 
 def arraydims(compiler):
@@ -278,6 +281,10 @@ def numpy2fortran(ffi, arr, compiler):
         raise TypeError('needs Fortran order in NumPy arrays')
 
     ndims = len(arr.shape)
+    cached = _cached_numpy_descriptor(ffi, arr, compiler, ndims)
+    if cached is not None:
+        return cached
+
     arrdata = ffi.new('array_{}d*'.format(ndims))
     arrdata.base_addr = ffi.cast('void*', arr.ctypes.data)
     if compiler['name'] == 'gfortran':
@@ -316,7 +323,48 @@ def numpy2fortran(ffi, arr, compiler):
             arrdata.dim[kd].extent = arr.shape[kd]
             distance = distance*arr.shape[kd]
 
-    return arrdata
+    return _cache_numpy_descriptor(ffi, arr, compiler, arrdata)
+
+
+def _array_cache_key(arr, compiler):
+    return (id(arr), compiler['name'], compiler['version'])
+
+
+def _array_cache_signature(arr):
+    return (arr.ctypes.data, arr.shape, arr.strides, arr.dtype.str)
+
+
+def _cached_numpy_descriptor(ffi, arr, compiler, ndims):
+    cache = _NUMPY_DESCRIPTOR_CACHES.get(id(ffi))
+    if cache is None:
+        return None
+
+    entry = cache.get(_array_cache_key(arr, compiler))
+    if entry is None:
+        return None
+
+    ref, signature, descriptor = entry
+    if ref() is arr and signature == _array_cache_signature(arr):
+        return descriptor
+
+    cache.pop(_array_cache_key(arr, compiler), None)
+    return None
+
+
+def _cache_numpy_descriptor(ffi, arr, compiler, descriptor):
+    try:
+        ref = weakref.ref(arr)
+    except TypeError:
+        return descriptor
+
+    cache = _NUMPY_DESCRIPTOR_CACHES.get(id(ffi))
+    if cache is None:
+        cache = {}
+        _NUMPY_DESCRIPTOR_CACHES[id(ffi)] = cache
+
+    cache[_array_cache_key(arr, compiler)] = (
+        ref, _array_cache_signature(arr), descriptor)
+    return descriptor
 
 
 def call_fortran(ffi, lib, function, compiler, module, *args):

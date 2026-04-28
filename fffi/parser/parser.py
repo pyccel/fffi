@@ -116,7 +116,7 @@ class InternalSubprogram(object):
             self.namespace = {**self.namespace, **decl.namespace}
 
 
-class SubprogramHeading(object):
+class SubProgramHeading(object):
     """Class representing a Fortran internal subprogram."""
 
     def __init__(self, **kwargs):
@@ -124,7 +124,7 @@ class SubprogramHeading(object):
         self.arguments = kwargs.pop('arguments', [])  # optional
 
 
-class SubprogramEnding(object):
+class SubProgramEnding(object):
     """Class representing a Fortran internal subprogram."""
 
     def __init__(self, **kwargs):
@@ -315,7 +315,7 @@ def parse(inputs, debug=False):
     classes = [Fortran,
                Module,
                InternalSubprogram,
-               SubprogramHeading,
+               SubProgramHeading,
                Declaration,
                Stmt,
                DeclarationAttribute,
