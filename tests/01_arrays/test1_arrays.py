@@ -109,32 +109,37 @@ class TestArrays(TestCase):
         then 1000 times. Check for memory leaks via tracemalloc
         """
 
+        if tracemalloc.is_tracing():
+            tracemalloc.stop()
         tracemalloc.start()
-        snapshot1 = tracemalloc.take_snapshot()
-        arr = np.ones((self.m, self.n), order='F')  # correct array order
+        try:
+            snapshot1 = tracemalloc.take_snapshot()
+            arr = np.ones((self.m, self.n), order='F')  # correct array order
 
-        for k in range(10):
-            arr[:, :] = 1.0
-            self.mod_arrays.test_array_2d(arr)
-            np.testing.assert_almost_equal(arr, self.refarr)
+            for k in range(10):
+                arr[:, :] = 1.0
+                self.mod_arrays.test_array_2d(arr)
+                np.testing.assert_almost_equal(arr, self.refarr)
 
-        gc.collect()
-        snapshot2 = tracemalloc.take_snapshot()
+            gc.collect()
+            snapshot2 = tracemalloc.take_snapshot()
 
-        stats = snapshot2.compare_to(snapshot1, 'filename')
-        statsum = sum(stat.count_diff for stat in stats)
+            stats = snapshot2.compare_to(snapshot1, 'filename')
+            statsum = sum(stat.count_diff for stat in stats)
 
-        snapshot1 = tracemalloc.take_snapshot()
-        for k in range(1000):
-            arr[:, :] = 1.0
-            self.mod_arrays.test_array_2d(arr)
-            np.testing.assert_almost_equal(arr, self.refarr)
+            snapshot1 = tracemalloc.take_snapshot()
+            for k in range(1000):
+                arr[:, :] = 1.0
+                self.mod_arrays.test_array_2d(arr)
+                np.testing.assert_almost_equal(arr, self.refarr)
 
-        gc.collect()
-        snapshot2 = tracemalloc.take_snapshot()
+            gc.collect()
+            snapshot2 = tracemalloc.take_snapshot()
 
-        stats = snapshot2.compare_to(snapshot1, 'filename')
-        self.assertLessEqual(sum(stat.count_diff for stat in stats), statsum)
+            stats = snapshot2.compare_to(snapshot1, 'filename')
+            self.assertLessEqual(sum(stat.count_diff for stat in stats), statsum)
+        finally:
+            tracemalloc.stop()
 
 
 if __name__ == "__main__":

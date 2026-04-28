@@ -6,6 +6,41 @@
 Python with NumPy arrays. It is based on CFFI and currently assumes the use of
 gfortran or Intel Fortran.
 
+## ABI safety and compiler assumptions
+
+`fffi` calls the compiler-generated Fortran ABI. It is meant for controlled
+Python/Fortran prototyping where the wrapper and the target library are built
+for the same compiler family and compatible compiler version. It is not a
+portable replacement for `ISO_C_BINDING`/`BIND(C)`.
+
+For new stable public interfaces, prefer explicit `BIND(C)` entry points. Use
+`fffi` for non-`BIND(C)` libraries only when these assumptions hold:
+
+* The Fortran compiler is supported by `fffi` (`gfortran` or Intel Fortran).
+* The wrapper is generated for the same compiler ABI as the shared library.
+* ABI-changing compiler flags are not mixed between the library and callers.
+  In particular, do not mix gfortran objects compiled with `-ff2c` and the
+  default GNU calling convention.
+* Scalars are passed as pointers unless the Fortran dummy argument has
+  `VALUE`.
+* Assumed-shape arrays use compiler-specific descriptors. `fffi` generates
+  those descriptors for the supported compiler layouts; this is why arbitrary
+  Fortran compilers are not supported.
+* Character arguments need hidden length arguments. The hidden length type
+  changed in gfortran 8, so generated signatures must match the compiler
+  version.
+* Fortran `LOGICAL` values are compiler ABI values, not a cross-compiler
+  Boolean format. With gfortran, only 0 and 1 are valid.
+* Function results follow the compiler ABI. Scalar numeric and C99 complex
+  results may be returned by value, while arrays and character results use
+  hidden result arguments. Subroutines return `void`.
+
+These rules follow the GNU Fortran argument-passing and code-generation
+documentation:
+
+* <https://gcc.gnu.org/onlinedocs/gfortran/Argument-passing-conventions.html>
+* <https://gcc.gnu.org/onlinedocs/gfortran/Code-Gen-Options.html>
+
 The focus of `fffi` is dynamical automatic generation of interfaces directly
 within Python with a minimum of extra code generation and files to allow
 for the simplest possible workflow for fast prototyping of Python/Fortran codes.

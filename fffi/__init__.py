@@ -7,3 +7,6 @@ from .common import *
 from .parser import *
 from .fortran_wrapper   import *
 from .fffi   import *
+
+fortran_library = FortranLibrary
+fortran_module = FortranModule
